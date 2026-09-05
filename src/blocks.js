@@ -1,5 +1,5 @@
 // Rejestr bloków. Działa w przeglądarce (global BC) i w Node (module.exports).
-var BC = (typeof window !== 'undefined') ? (window.BC = window.BC || {}) : (typeof BC !== 'undefined' ? BC : {});
+var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (global.BC = global.BC || {});
 (function (BC) {
   var Blocks = {
     AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7,

@@ -1,5 +1,5 @@
 // Deterministyczny szum 2D (value noise + fbm) na bazie mulberry32.
-var BC = (typeof window !== 'undefined') ? (window.BC = window.BC || {}) : (typeof BC !== 'undefined' ? BC : {});
+var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (global.BC = global.BC || {});
 (function (BC) {
   function mulberry32(a) {
     return function () {
