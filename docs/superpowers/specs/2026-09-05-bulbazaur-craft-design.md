@@ -79,3 +79,14 @@ Node `--test`: noise (determinizm), world (get/set, granice, serializacja round-
 trawa na powierzchni, woda w dołkach), mesher (liczba ścian dla pojedynczego bloku = 6, sąsiadujące
 bloki ukrywają ściany), physics (stanie na bloku, brak przenikania), raycast (trafia najbliższy blok,
 poprawna normalna). Sprawdzenie wizualne i sterowania w panelu przeglądarki.
+
+## Aktualizacja 2026-09-06 (wersja 2)
+- Świat nieskończony: chunki generowane na żądanie wokół gracza (promień 7 chunków), zwalniane po oddaleniu.
+  Dekoracje (drzewa, kaktusy, kwiaty) liczone z marginesem 3 bloków, więc są spójne na granicach chunków.
+- Wysokość 80, poziom wody 30, góry, doliny, biomy: łąka, las, pustynia (piasek, kaktusy), śnieg (świerki).
+- Nowe bloki: śnieg, kaktus, cegła, bruk, żwir, tulipan. Pasek bloków ma 3 strony.
+- Muzyka generatywna (pad akordowy, bas, melodia pentatoniczna z echem) i efekty dźwiękowe w Web Audio.
+  Przełączniki w menu i klawisz M, preferencje zapamiętywane.
+- Chmury nad światem, efekt pod wodą, współrzędne i nazwa biomu w HUD, klawisz H „do domu”, bieg na podwójne W.
+- Zapis: format v2 (seed + lista zmian), stary v1 ignorowany. Pozycja gracza przywracana tylko dla tego samego seeda.
+- Tryb awaryjny bez blokady kursora: rozglądanie przeciąganiem, klik bez ruchu = akcja.

@@ -1,6 +1,8 @@
 # 🌱 Bulbazaur Craft
 
 Gra w stylu Minecraft do przeglądarki. Bohaterem jest Bulbazaur. Tylko tryb kreatywny: bez życia, głodu i potworów.
+Świat jest nieskończony i generuje się w miarę wędrówki: łąki, lasy, pustynie z kaktusami, ośnieżone góry, jeziora i chmury.
+Spokojna muzyka i dźwięki są generowane na żywo (Web Audio), bez plików.
 
 ## Jak uruchomić
 1. Otwórz plik `index.html` podwójnym kliknięciem (Chrome, Safari, Edge lub Firefox).
@@ -15,10 +17,13 @@ Gra w stylu Minecraft do przeglądarki. Bohaterem jest Bulbazaur. Tylko tryb kre
 | Spacja | skok; 2× szybko = latanie (w locie Spacja w górę, Shift w dół) |
 | Shift + Spacja | wysoki skok Bulbazaura |
 | LPM / PPM | niszcz / stawiaj blok |
-| 1–9, kółko myszy | wybór bloku, Tab = druga strona (kolorowa wełna, sadzonka) |
+| 1–9, kółko myszy | wybór bloku; Tab przełącza 3 strony (natura, kolorowa wełna, śnieg/kaktus/cegła/bruk) |
 | Q | pnącza: niszczy blok z odległości 8 kroków |
 | E | nasionko: sadzi drzewo na trawie lub ziemi, wyrasta po 5 s |
 | F5 | widok z boku, żeby zobaczyć Bulbazaura |
+| W W (2× szybko) | bieg |
+| H | wróć do domu (miejsce startu), gdy się zgubisz |
+| M | muzyka włącz / wyłącz (dźwięki i muzyka także w menu) |
 | Esc | menu |
 
 Jeśli przeglądarka nie pozwoli zablokować kursora, rozglądaj się przeciągając myszą, a kliknięcie bez ruchu niszczy lub stawia blok.

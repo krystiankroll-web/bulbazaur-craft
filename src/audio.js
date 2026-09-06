@@ -51,7 +51,7 @@
     var ctx = A.ctx;
     while (nextStep < ctx.currentTime + 1.2) {
       if (A.musicOn) playStep(stepIdx, nextStep);
-      nextStep += STEP; stepIdx++;
+      nextStep += STEP; stepIdx++; A.steps = stepIdx;
     }
   }
 
