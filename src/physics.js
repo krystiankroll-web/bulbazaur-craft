@@ -59,13 +59,7 @@ if (typeof require !== 'undefined' && !BC.World) { require('./world.js'); }
     var hitY = moveAxis(world, body, 'y', body.vel.y * dt);
     body.onGround = hitY && body.vel.y === 0 && collides(world, { x: body.pos.x, y: body.pos.y - 0.05, z: body.pos.z }, body.w, body.h);
     if (!hitY) body.onGround = false;
-    // ściany świata
-    var lim = 0.3;
-    if (body.pos.x < lim) body.pos.x = lim;
-    if (body.pos.z < lim) body.pos.z = lim;
-    if (body.pos.x > world.size - lim) body.pos.x = world.size - lim;
-    if (body.pos.z > world.size - lim) body.pos.z = world.size - lim;
-    if (body.pos.y > world.height + 10) body.pos.y = world.height + 10;
+    if (body.pos.y > world.height + 10) { body.pos.y = world.height + 10; if (body.vel.y > 0) body.vel.y = 0; }
     return body;
   }
   function makeBody(x, y, z) {

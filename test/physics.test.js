@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const BC = require('../src/physics.js');
 const B = BC.Blocks;
 function floorWorld() {
-  const w = new BC.World({ seed: 1, size: 32, height: 32 });
+  const w = new BC.World({ seed: 1, terrain: false, height: 32 });
   for (let x = 0; x < 32; x++) for (let z = 0; z < 32; z++) w.set(x, 5, z, B.STONE);
   return w;
 }
@@ -56,9 +56,18 @@ test('woda: wolniejsze opadanie', () => {
   assert.ok(body.pos.y > 8, 'y=' + body.pos.y);
 });
 
-test('granice świata trzymają gracza w środku', () => {
-  const w = floorWorld();
-  const body = BC.Physics.makeBody(1, 6, 1); body.vel.x = -10; body.vel.z = -10;
-  run(w, body, 1);
-  assert.ok(body.pos.x >= 0.3 && body.pos.z >= 0.3);
+test('kolizje działają na ujemnych współrzędnych', () => {
+  const w = new BC.World({ seed: 1, terrain: false, height: 32 });
+  for (let x = -20; x < 0; x++) for (let z = -20; z < 0; z++) w.set(x, 5, z, B.STONE);
+  const body = BC.Physics.makeBody(-10.5, 12, -10.5);
+  run(w, body, 3);
+  assert.ok(Math.abs(body.pos.y - 6) < 0.01, 'y=' + body.pos.y);
+  assert.equal(body.onGround, true);
+});
+
+test('sufit świata zatrzymuje lot w górę', () => {
+  const w = new BC.World({ seed: 1, terrain: false, height: 32 });
+  const body = BC.Physics.makeBody(0.5, 30, 0.5); body.flying = true; body.vel.y = 20;
+  run(w, body, 2);
+  assert.ok(body.pos.y <= 42.01);
 });

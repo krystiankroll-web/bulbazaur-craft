@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const BC = require('../src/mesher.js');
 const B = BC.Blocks;
 const atlas = { uv: (i) => [i / 32, 0, (i + 1) / 32, 1] };
-function empty() { return new BC.World({ seed: 1, size: 32, height: 32 }); }
+function empty() { return new BC.World({ seed: 1, terrain: false, height: 32 }); }
 
 test('pojedynczy kamień = 6 ścian', () => {
   const w = empty(); w.set(5, 5, 5, B.STONE);

@@ -5,7 +5,8 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
     AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG: 6, LEAVES: 7,
     PLANKS: 8, GLASS: 9, FLOWER: 10, SAPLING: 11, BEDROCK: 12,
     WOOL_RED: 13, WOOL_ORANGE: 14, WOOL_YELLOW: 15, WOOL_GREEN: 16,
-    WOOL_BLUE: 17, WOOL_PURPLE: 18, WOOL_PINK: 19, WOOL_WHITE: 20
+    WOOL_BLUE: 17, WOOL_PURPLE: 18, WOOL_PINK: 19, WOOL_WHITE: 20,
+    SNOW: 21, CACTUS: 22, BRICK: 23, COBBLE: 24, GRAVEL: 25, TULIP: 26
   };
 
   // Indeksy kafli w atlasie (zob. textures.js)
@@ -13,7 +14,8 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
     GRASS_TOP: 0, GRASS_SIDE: 1, DIRT: 2, STONE: 3, SAND: 4, WATER: 5, LOG_SIDE: 6, LOG_TOP: 7,
     LEAVES: 8, PLANKS: 9, GLASS: 10, FLOWER: 11, SAPLING: 12, BEDROCK: 13,
     WOOL_RED: 14, WOOL_ORANGE: 15, WOOL_YELLOW: 16, WOOL_GREEN: 17,
-    WOOL_BLUE: 18, WOOL_PURPLE: 19, WOOL_PINK: 20, WOOL_WHITE: 21
+    WOOL_BLUE: 18, WOOL_PURPLE: 19, WOOL_PINK: 20, WOOL_WHITE: 21,
+    SNOW_TOP: 22, SNOW_SIDE: 23, CACTUS_SIDE: 24, CACTUS_TOP: 25, BRICK: 26, COBBLE: 27, GRAVEL: 28, TULIP: 29
   };
 
   function def(name, opts) {
@@ -51,10 +53,17 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
   BlockInfo[Blocks.WOOL_PURPLE] = def('Wełna fioletowa', { tex: uni(T.WOOL_PURPLE) });
   BlockInfo[Blocks.WOOL_PINK] = def('Wełna różowa', { tex: uni(T.WOOL_PINK) });
   BlockInfo[Blocks.WOOL_WHITE] = def('Wełna biała', { tex: uni(T.WOOL_WHITE) });
+  BlockInfo[Blocks.SNOW] = def('Śnieg', { tex: { top: T.SNOW_TOP, side: T.SNOW_SIDE, bottom: T.DIRT } });
+  BlockInfo[Blocks.CACTUS] = def('Kaktus', { tex: { top: T.CACTUS_TOP, side: T.CACTUS_SIDE, bottom: T.CACTUS_TOP } });
+  BlockInfo[Blocks.BRICK] = def('Cegła', { tex: uni(T.BRICK) });
+  BlockInfo[Blocks.COBBLE] = def('Bruk', { tex: uni(T.COBBLE) });
+  BlockInfo[Blocks.GRAVEL] = def('Żwir', { tex: uni(T.GRAVEL) });
+  BlockInfo[Blocks.TULIP] = def('Tulipan', { solid: false, transparent: true, cross: true, tex: uni(T.TULIP) });
 
   var Hotbar = [
     [Blocks.GRASS, Blocks.DIRT, Blocks.STONE, Blocks.SAND, Blocks.LOG, Blocks.LEAVES, Blocks.PLANKS, Blocks.GLASS, Blocks.FLOWER],
-    [Blocks.WOOL_RED, Blocks.WOOL_ORANGE, Blocks.WOOL_YELLOW, Blocks.WOOL_GREEN, Blocks.WOOL_BLUE, Blocks.WOOL_PURPLE, Blocks.WOOL_PINK, Blocks.WOOL_WHITE, Blocks.SAPLING]
+    [Blocks.WOOL_RED, Blocks.WOOL_ORANGE, Blocks.WOOL_YELLOW, Blocks.WOOL_GREEN, Blocks.WOOL_BLUE, Blocks.WOOL_PURPLE, Blocks.WOOL_PINK, Blocks.WOOL_WHITE, Blocks.SAPLING],
+    [Blocks.SNOW, Blocks.CACTUS, Blocks.BRICK, Blocks.COBBLE, Blocks.GRAVEL, Blocks.TULIP, Blocks.SAPLING, Blocks.GLASS, Blocks.PLANKS]
   ];
 
   BC.Blocks = Blocks;
