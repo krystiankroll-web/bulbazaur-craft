@@ -2,7 +2,7 @@
 var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (global.BC = global.BC || {});
 (function (BC) {
   var T = BC.Tex;
-  var TILE = 16, COUNT = 22;
+  var TILE = 16, COUNT = 30;
 
   function rng(seed) { return BC.Noise.mulberry32(seed); }
   function px(ctx, x, y, c) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }
@@ -69,6 +69,43 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
   var wool = [[T.WOOL_RED, [210, 50, 50]], [T.WOOL_ORANGE, [235, 130, 40]], [T.WOOL_YELLOW, [240, 215, 60]], [T.WOOL_GREEN, [70, 180, 80]],
     [T.WOOL_BLUE, [60, 110, 220]], [T.WOOL_PURPLE, [150, 80, 200]], [T.WOOL_PINK, [240, 130, 190]], [T.WOOL_WHITE, [235, 235, 235]]];
   wool.forEach(function (w, i) { painters[w[0]] = function (ctx, ox) { noisy(ctx, ox, w[1], 0.08, 20 + i); }; });
+  painters[T.SNOW_TOP] = function (ctx, ox) { noisy(ctx, ox, [240, 245, 250], 0.06, 30); };
+  painters[T.SNOW_SIDE] = function (ctx, ox) {
+    noisy(ctx, ox, [134, 96, 67], 0.25, 31);
+    var r = rng(32);
+    for (var x = 0; x < TILE; x++) { var d = 4 + Math.floor(r() * 3); for (var y = 0; y < d; y++) px(ctx, ox + x, y, y < 3 ? '#f2f6fa' : '#dfe6ee'); }
+  };
+  painters[T.CACTUS_SIDE] = function (ctx, ox) {
+    noisy(ctx, ox, [60, 140, 60], 0.15, 33);
+    for (var y = 0; y < TILE; y++) { px(ctx, ox + 3, y, '#2f7a2f'); px(ctx, ox + 8, y, '#2f7a2f'); px(ctx, ox + 13, y, '#2f7a2f'); }
+    for (var yy = 1; yy < TILE; yy += 4) { px(ctx, ox + 1, yy, '#e8f0c0'); px(ctx, ox + 6, yy + 2, '#e8f0c0'); px(ctx, ox + 11, yy, '#e8f0c0'); px(ctx, ox + 15, yy + 2, '#e8f0c0'); }
+  };
+  painters[T.CACTUS_TOP] = function (ctx, ox) { noisy(ctx, ox, [80, 160, 80], 0.1, 34); ctx.fillStyle = '#2f7a2f'; ctx.fillRect(ox + 4, 4, 8, 8); };
+  painters[T.BRICK] = function (ctx, ox) {
+    fill(ctx, ox, '#c9c2b8');
+    var r = rng(35);
+    for (var y = 0; y < TILE; y += 4) {
+      var off = (y / 4) % 2 ? 4 : 0;
+      for (var x = -4; x < TILE; x += 8) {
+        var k = 0.9 + r() * 0.2;
+        ctx.fillStyle = 'rgb(' + Math.round(170 * k) + ',' + Math.round(70 * k) + ',' + Math.round(55 * k) + ')';
+        ctx.fillRect(ox + Math.max(0, x + off), y, Math.min(7, x + off + 7) - Math.max(0, x + off), 3);
+      }
+    }
+  };
+  painters[T.COBBLE] = function (ctx, ox) {
+    noisy(ctx, ox, [110, 110, 110], 0.35, 36);
+    var r = rng(37);
+    for (var i = 0; i < 7; i++) { var x = Math.floor(r() * 13), y = Math.floor(r() * 13), w = 2 + Math.floor(r() * 3);
+      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(ox + x, y, w + 1, 1); ctx.fillRect(ox + x, y, 1, w + 1); }
+  };
+  painters[T.GRAVEL] = function (ctx, ox) { noisy(ctx, ox, [140, 130, 120], 0.45, 38); };
+  painters[T.TULIP] = function (ctx, ox) {
+    for (var y = 6; y < TILE; y++) px(ctx, ox + 8, y, '#3c8a2c');
+    px(ctx, ox + 6, 12, '#3c8a2c'); px(ctx, ox + 7, 11, '#3c8a2c'); px(ctx, ox + 10, 13, '#3c8a2c');
+    [[7, 2], [8, 2], [9, 2], [6, 3], [7, 3], [8, 3], [9, 3], [10, 3], [6, 4], [7, 4], [8, 4], [9, 4], [10, 4], [7, 5], [8, 5], [9, 5]].forEach(function (p) { px(ctx, ox + p[0], p[1], '#e8452c'); });
+    px(ctx, ox + 7, 3, '#ff8a6a'); px(ctx, ox + 8, 2, '#ff8a6a');
+  };
 
   function createAtlas() {
     var canvas = document.createElement('canvas');

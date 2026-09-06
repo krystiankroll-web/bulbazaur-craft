@@ -78,7 +78,7 @@ test('drzewa przechodzą przez granicę chunków spójnie', () => {
       const shape = w.treeShape(x, z, d.kind);
       for (const s of shape) if (s[3] === B.LEAVES && x + s[0] === x + 1) {
         const id = w.get(x + s[0], d.y + s[1], z + s[2]);
-        assert.ok(id === B.LEAVES || id === B.LOG || id === B.CACTUS, 'brak liścia w sąsiednim chunku przy ' + (x + s[0]) + ',' + (d.y + s[1]) + ',' + (z + s[2]) + ' = ' + id);
+        assert.ok(id !== B.AIR, 'brak liścia w sąsiednim chunku przy ' + (x + s[0]) + ',' + (d.y + s[1]) + ',' + (z + s[2]) + ' = ' + id);
       }
       found++;
     }

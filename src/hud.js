@@ -1,7 +1,8 @@
-// HUD: pasek bloków, portret, komunikaty.
+// HUD: pasek bloków, portret, komunikaty, współrzędne.
 (function (BC) {
   var HUD = {};
   var msgTimer = null;
+  var PAGES = 3;
 
   HUD.init = function (atlas) {
     HUD.atlas = atlas;
@@ -10,27 +11,29 @@
     HUD.setPage(0);
   };
   HUD.setPage = function (p) {
-    HUD.page = p;
+    HUD.page = ((p % PAGES) + PAGES) % PAGES;
     var bar = document.getElementById('hotbar');
     bar.innerHTML = '';
-    BC.Hotbar[p].forEach(function (id, i) {
+    BC.Hotbar[HUD.page].forEach(function (id, i) {
       var d = document.createElement('div');
       d.className = 'slot' + (i === HUD.slot ? ' active' : '');
       var img = document.createElement('img');
-      img.src = HUD.atlas.icon(BC.BlockInfo[id].tex.side);
+      img.src = HUD.atlas.icon(BC.BlockInfo[id].tex.top === BC.BlockInfo[id].tex.side ? BC.BlockInfo[id].tex.side : BC.BlockInfo[id].tex.side);
       img.title = BC.BlockInfo[id].name;
       var n = document.createElement('span'); n.textContent = i + 1;
       d.appendChild(img); d.appendChild(n);
+      d.addEventListener('mousedown', function (e) { e.stopPropagation(); HUD.setSlot(i); });
       bar.appendChild(d);
     });
-    document.getElementById('page').textContent = 'Strona ' + (p + 1) + '/2  (Tab)';
-    HUD.setSlot(HUD.slot);
+    document.getElementById('page').textContent = 'Strona ' + (HUD.page + 1) + '/' + PAGES + '  (Tab)';
+    HUD.setSlot(HUD.slot, true);
   };
-  HUD.setSlot = function (i) {
+  HUD.setSlot = function (i, silent) {
     HUD.slot = i;
     var slots = document.querySelectorAll('#hotbar .slot');
     slots.forEach(function (s, k) { s.classList.toggle('active', k === i); });
     HUD.message(BC.BlockInfo[HUD.selected()].name, 900);
+    if (!silent && BC.Audio) BC.Audio.sfx('click');
   };
   HUD.selected = function () { return BC.Hotbar[HUD.page][HUD.slot]; };
   HUD.message = function (text, ms) {
@@ -39,6 +42,11 @@
     clearTimeout(msgTimer);
     msgTimer = setTimeout(function () { el.style.opacity = 0; }, ms || 1500);
   };
+  HUD.setCoords = function (x, y, z, biome) {
+    var names = ['Łąka', 'Las', 'Pustynia', 'Śnieg'];
+    document.getElementById('coords').textContent = 'X ' + Math.floor(x) + '  Y ' + Math.floor(y) + '  Z ' + Math.floor(z) + '   ' + names[biome];
+  };
+  HUD.setWater = function (on) { document.getElementById('water').style.display = on ? 'block' : 'none'; };
   // Pikselowy portret Bulbazaura 16x16 skalowany do 64x64
   HUD.drawPortrait = function () {
     var c = document.getElementById('portrait'); if (!c) return;
