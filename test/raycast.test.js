@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const BC = require('../src/raycast.js');
 const B = BC.Blocks;
-function empty() { return new BC.World({ seed: 1, size: 32, height: 32 }); }
+function empty() { return new BC.World({ seed: 1, terrain: false, height: 32 }); }
 
 test('promień w dół trafia blok pod nogami, normalna do góry', () => {
   const w = empty(); w.set(10, 5, 10, B.STONE);

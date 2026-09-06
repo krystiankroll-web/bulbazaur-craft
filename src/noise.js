@@ -44,11 +44,12 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
       }
       return sum / norm;
     }
-    // Hash 2D w [0,1) niezależny od pozycji szumu – do losowania drzew/kwiatów.
+    // Hash 2D w [0,1) – dobrze wymieszany, zależny od seeda (do losowania drzew, kwiatów, kaktusów).
     function hash2(x, y) {
-      var h = (perm[(perm[x & 255] + y) & 255] * 31 + perm[(x * 7 + y * 13) & 255]) & 255;
-      var v = ((h * 2654435761) ^ (seed >>> 0)) >>> 0;
-      return (v % 10007) / 10007;
+      var h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(seed | 0, 1013904223)) | 0;
+      h = Math.imul(h ^ (h >>> 13), 1274126177);
+      h = h ^ (h >>> 16);
+      return (h >>> 0) / 4294967296;
     }
     return { noise2: noise2, fbm: fbm, hash2: hash2, rand: rand };
   }

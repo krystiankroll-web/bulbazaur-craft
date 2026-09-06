@@ -17,8 +17,8 @@ test('woda i kwiat nie są stałe, bedrock niezniszczalny', () => {
   assert.equal(BC.BlockInfo[BC.Blocks.BEDROCK].breakable, false);
 });
 
-test('hotbar ma 2 strony po 9 slotów z placeable blokami', () => {
-  assert.equal(BC.Hotbar.length, 2);
+test('hotbar ma 3 strony po 9 slotów z placeable blokami', () => {
+  assert.equal(BC.Hotbar.length, 3);
   for (const page of BC.Hotbar) {
     assert.equal(page.length, 9);
     for (const id of page) assert.equal(BC.BlockInfo[id].placeable, true);

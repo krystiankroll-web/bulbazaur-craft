@@ -1,19 +1,20 @@
-// Gracz: sterowanie, kamera FPP/TPP, edycja bloków, moce Bulbazaura.
+// Gracz: sterowanie, kamera FPP/TPP, edycja bloków, moce Bulbazaura, dźwięki.
 (function (BC) {
   var B = BC.Blocks, Info = BC.BlockInfo;
   var Player = {};
-  var keys = {}, yaw = 0, pitch = 0, tpp = false, lastSpace = 0, spaceHeld = false;
+  var keys = {}, yaw = 0, pitch = 0, tpp = false, lastSpace = 0, spaceHeld = false, lastW = 0, sprint = false;
   var REACH = 6, VINE_REACH = 8;
   var saplings = [];
   var vine = null;
+  var wasOnGround = true, wasInWater = false;
 
-  Player.init = function (game) {
+  Player.init = function (game, spawn) {
     var world = game.world;
     Player.game = game;
-    var sx = Math.floor(world.size / 2) + 0.5, sz = Math.floor(world.size / 2) + 0.5;
-    Player.body = BC.Physics.makeBody(sx, world.surfaceY(Math.floor(sx), Math.floor(sz)) + 1.01, sz);
+    Player.spawn = spawn;
+    Player.body = BC.Physics.makeBody(spawn.x, spawn.y, spawn.z);
     var saved = Player.loadPos();
-    if (saved) { Player.body.pos = saved.pos; yaw = saved.yaw; pitch = saved.pitch; }
+    if (saved && saved.seed === world.seed) { Player.body.pos = saved.pos; yaw = saved.yaw; pitch = saved.pitch; }
     Player.body.flying = false;
 
     Player.model = BC.Bulbasaur.create();
@@ -61,31 +62,40 @@
     document.addEventListener('keydown', function (e) {
       if (e.code === 'Escape' && Player.fallback && Player.active()) { Player.paused = true; BC.Boot.showMenu(); return; }
       if (!Player.active()) return;
+      if (e.repeat) { keys[e.code] = true; return; }
       keys[e.code] = true;
+      var now = performance.now();
       if (e.code >= 'Digit1' && e.code <= 'Digit9') BC.HUD.setSlot(Number(e.code[5]) - 1);
-      if (e.code === 'Tab') { e.preventDefault(); BC.HUD.setPage(1 - BC.HUD.page); }
-      if (e.code === 'F5') { e.preventDefault(); tpp = !tpp; Player.model.group.visible = tpp; BC.HUD.message(tpp ? 'Widok z boku' : 'Widok z oczu Bulbazaura', 1000); }
+      if (e.code === 'Tab') { e.preventDefault(); BC.HUD.setPage(BC.HUD.page + 1); }
+      if (e.code === 'F5') { e.preventDefault(); Player.toggleView(); }
       if (e.code === 'KeyQ') Player.vineWhip();
       if (e.code === 'KeyE') Player.plantSeed();
+      if (e.code === 'KeyH') Player.goHome();
+      if (e.code === 'KeyM') { BC.Audio.setMusic(!BC.Audio.musicOn); BC.Boot.syncAudioUi(); BC.HUD.message(BC.Audio.musicOn ? 'Muzyka włączona' : 'Muzyka wyłączona', 1000); }
+      if (e.code === 'KeyW') { if (now - lastW < 280) sprint = true; lastW = now; }
       if (e.code === 'Space' && !spaceHeld) {
         spaceHeld = true;
-        var now = performance.now();
         if (now - lastSpace < 300) {
           Player.body.flying = !Player.body.flying;
           Player.body.vel.y = 0;
+          BC.Audio.sfx(Player.body.flying ? 'fly' : 'unfly');
           BC.HUD.message(Player.body.flying ? 'Latanie włączone' : 'Latanie wyłączone', 1000);
-        }
-        lastSpace = now;
+          lastSpace = 0;
+        } else lastSpace = now;
       }
     });
-    document.addEventListener('keyup', function (e) { keys[e.code] = false; if (e.code === 'Space') spaceHeld = false; });
+    document.addEventListener('keyup', function (e) {
+      keys[e.code] = false;
+      if (e.code === 'Space') spaceHeld = false;
+      if (e.code === 'KeyW') sprint = false;
+    });
     document.addEventListener('pointerlockchange', function () {
       if (document.pointerLockElement !== canvas && !Player.fallback) { keys = {}; if (BC.Boot) BC.Boot.showMenu(); }
     });
+    window.addEventListener('blur', function () { keys = {}; sprint = false; });
     game.updaters.push(Player.update);
   };
 
-  // Gra jest aktywna, gdy kursor jest zablokowany albo działa tryb awaryjny bez blokady.
   Player.active = function () {
     return !Player.paused && (Player.fallback || document.pointerLockElement === Player.canvas);
   };
@@ -100,6 +110,11 @@
     Player.fallback = true;
     BC.HUD.message('Rozglądaj się przeciągając myszą', 2500);
   };
+  Player.toggleView = function () {
+    tpp = !tpp; Player.model.group.visible = tpp;
+    BC.HUD.message(tpp ? 'Widok z boku' : 'Widok z oczu Bulbazaura', 1000);
+  };
+
   function forward() { return { x: -Math.sin(yaw), z: -Math.cos(yaw) }; }
   function eye() { var p = Player.body.pos; return { x: p.x, y: p.y + 1.5, z: p.z }; }
   function lookDir() {
@@ -109,26 +124,33 @@
   Player.aim = function (dist) { return BC.Raycast.cast(Player.game.world, eye(), lookDir(), dist); };
 
   Player.update = function (dt, t) {
-    var body = Player.body, game = Player.game;
+    var body = Player.body, game = Player.game, world = game.world;
     var f = forward(), r = { x: -f.z, z: f.x };
     var mx = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
     var mz = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
+    if (!keys.KeyW) sprint = false;
     var len = Math.hypot(mx, mz) || 1;
-    var speed = body.flying ? 11 : (body.inWater ? 3 : 5.5);
+    var speed = body.flying ? 12 : (body.inWater ? 3.2 : 5.5);
+    if (sprint) speed *= 1.6;
     var vx = (f.x * mz + r.x * mx) / len * speed, vz = (f.z * mz + r.z * mx) / len * speed;
-    // płynne przyspieszanie
     var k = body.flying ? 0.15 : 0.35;
     body.vel.x += (vx - body.vel.x) * k;
     body.vel.z += (vz - body.vel.z) * k;
+    var shift = keys.ShiftLeft || keys.ShiftRight;
     if (body.flying) {
-      var vy = (keys.Space ? 1 : 0) - (keys.ShiftLeft || keys.ShiftRight ? 1 : 0);
+      var vy = (keys.Space ? 1 : 0) - (shift ? 1 : 0);
       body.vel.y += (vy * 9 - body.vel.y) * 0.2;
     } else if (keys.Space) {
-      if (body.onGround) body.vel.y = (keys.ShiftLeft || keys.ShiftRight) ? 16 : 9;
+      if (body.onGround) { body.vel.y = shift ? 16 : 9; BC.Audio.sfx(shift ? 'highjump' : 'jump'); }
       else if (body.inWater) body.vel.y = 4;
     }
-    BC.Physics.step(game.world, body, dt);
-    if (body.flying && body.onGround) body.flying = false;
+    // nie ruszaj się, dopóki chunk pod nogami nie istnieje (strumieniowanie)
+    if (!world.hasChunk(Math.floor(body.pos.x) >> 4, Math.floor(body.pos.z) >> 4)) { world.ensureChunk(Math.floor(body.pos.x) >> 4, Math.floor(body.pos.z) >> 4); }
+    BC.Physics.step(world, body, dt);
+    if (body.flying && body.onGround) { body.flying = false; }
+    if (body.onGround && !wasOnGround && body.vel.y === 0) BC.Audio.sfx('land');
+    if (body.inWater && !wasInWater) BC.Audio.sfx('splash');
+    wasOnGround = body.onGround; wasInWater = body.inWater;
 
     // kamera
     var cam = game.camera;
@@ -146,6 +168,11 @@
     } else {
       cam.position.set(e.x, e.y, e.z);
     }
+    BC.HUD.setWater(world.get(Math.floor(e.x), Math.floor(e.y), Math.floor(e.z)) === B.WATER);
+    if ((Player.hudTimer = (Player.hudTimer || 0) + dt) > 0.25) {
+      Player.hudTimer = 0;
+      BC.HUD.setCoords(body.pos.x, body.pos.y, body.pos.z, world.biomeAt(Math.floor(body.pos.x), Math.floor(body.pos.z)));
+    }
 
     // zaznaczenie bloku
     var hit = Player.aim(REACH);
@@ -160,8 +187,7 @@
       var ease = fade ? Math.max(0, 1 - (vine.userData.t - 0.4) / 0.15) : p;
       vine.scale.y = Math.max(0.001, vine.userData.len * ease);
       var a = vine.userData.from, bb = vine.userData.to;
-      var mid = { x: a.x + (bb.x - a.x) * ease * 0.5, y: a.y + (bb.y - a.y) * ease * 0.5, z: a.z + (bb.z - a.z) * ease * 0.5 };
-      vine.position.set(mid.x, mid.y, mid.z);
+      vine.position.set(a.x + (bb.x - a.x) * ease * 0.5, a.y + (bb.y - a.y) * ease * 0.5, a.z + (bb.z - a.z) * ease * 0.5);
       if (vine.userData.t > 0.55) vine.visible = false;
     }
 
@@ -170,9 +196,9 @@
       var s = saplings[i];
       if (t - s.t < 5) continue;
       saplings.splice(i, 1);
-      if (game.world.get(s.x, s.y, s.z) !== B.SAPLING) continue;
-      game.world.set(s.x, s.y, s.z, B.AIR);
-      game.rebuildChunks(game.world.growTree(s.x, s.y, s.z, true).concat([game.world.chunkKey(s.x >> 4, s.z >> 4)]));
+      if (world.get(s.x, s.y, s.z) !== B.SAPLING) continue;
+      game.rebuildChunks(world.growTree(s.x, s.y, s.z));
+      BC.Audio.sfx('grow');
       BC.HUD.message('Wyrosło drzewo!', 1200);
     }
   };
@@ -180,11 +206,11 @@
   Player.breakBlock = function (reach) {
     var hit = Player.aim(reach);
     if (!hit.hit) return false;
-    if (!Info[hit.id].breakable) { BC.HUD.message('Tego nie da się zniszczyć', 1000); return false; }
+    if (!Info[hit.id].breakable) { BC.HUD.message('Tego nie da się zniszczyć', 1000); BC.Audio.sfx('nope'); return false; }
     Player.game.setBlock(hit.x, hit.y, hit.z, B.AIR);
-    // kwiatek/sadzonka nad zniszczonym blokiem spada
     var above = Player.game.world.get(hit.x, hit.y + 1, hit.z);
     if (Info[above].cross) Player.game.setBlock(hit.x, hit.y + 1, hit.z, B.AIR);
+    BC.Audio.sfx('break');
     return true;
   };
   Player.placeBlock = function () {
@@ -198,14 +224,14 @@
     if (target !== B.AIR && target !== B.WATER && !Info[target].cross) return;
     if (Info[id].cross) {
       var below = world.get(x, y - 1, z);
-      if (below !== B.GRASS && below !== B.DIRT) { BC.HUD.message('To rośnie tylko na trawie lub ziemi', 1000); return; }
+      if (below !== B.GRASS && below !== B.DIRT && below !== B.SNOW) { BC.HUD.message('To rośnie tylko na trawie lub ziemi', 1000); BC.Audio.sfx('nope'); return; }
     }
-    if (Info[id].solid && BC.Physics.collides(world, Player.body.pos, Player.body.w, Player.body.h + 0) === false) {
-      // nie stawiaj bloku w sobie
+    if (Info[id].solid) {
       var b = Player.body, hw = b.w / 2;
       if (x + 1 > b.pos.x - hw && x < b.pos.x + hw && y + 1 > b.pos.y && y < b.pos.y + b.h && z + 1 > b.pos.z - hw && z < b.pos.z + hw) return;
     }
     Player.game.setBlock(x, y, z, id);
+    BC.Audio.sfx(id === B.SAPLING ? 'plant' : 'place');
     if (id === B.SAPLING) saplings.push({ x: x, y: y, z: z, t: performance.now() / 1000 });
   };
 
@@ -219,23 +245,35 @@
     vine.visible = true; vine.userData = { t: 0, len: len, from: from, to: to };
     vine.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx / len, dy / len, dz / len));
     vine.position.set(from.x, from.y, from.z); vine.scale.y = 0.001;
+    BC.Audio.sfx('vine');
     if (hit.hit) setTimeout(function () { Player.breakBlock(VINE_REACH); }, 200);
   };
 
   Player.plantSeed = function () {
     var hit = Player.aim(REACH);
     var world = Player.game.world;
-    if (!hit.hit || hit.ny !== 1) { BC.HUD.message('Celuj w trawę lub ziemię', 1000); return; }
-    if (hit.id !== B.GRASS && hit.id !== B.DIRT) { BC.HUD.message('Nasionko rośnie tylko na trawie lub ziemi', 1000); return; }
+    if (!hit.hit || hit.ny !== 1) { BC.HUD.message('Celuj w trawę lub ziemię', 1000); BC.Audio.sfx('nope'); return; }
+    if (hit.id !== B.GRASS && hit.id !== B.DIRT && hit.id !== B.SNOW) { BC.HUD.message('Nasionko rośnie tylko na trawie, ziemi lub śniegu', 1200); BC.Audio.sfx('nope'); return; }
     var x = hit.x, y = hit.y + 1, z = hit.z;
     if (world.get(x, y, z) !== B.AIR) return;
     Player.game.setBlock(x, y, z, B.SAPLING);
     saplings.push({ x: x, y: y, z: z, t: performance.now() / 1000 });
+    BC.Audio.sfx('plant');
     BC.HUD.message('Posadzone! Zaraz wyrośnie…', 1200);
   };
 
+  Player.goHome = function () {
+    var s = Player.spawn, world = Player.game.world;
+    Player.game.preload(s.x, s.z, 1);
+    var y = world.surfaceY(Math.floor(s.x), Math.floor(s.z)) + 1.01;
+    Player.body.pos = { x: s.x, y: y, z: s.z };
+    Player.body.vel = { x: 0, y: 0, z: 0 };
+    BC.Audio.sfx('home');
+    BC.HUD.message('Jesteś w domu', 1200);
+  };
+
   Player.savePos = function () {
-    try { localStorage.setItem('bc.player', JSON.stringify({ pos: Player.body.pos, yaw: yaw, pitch: pitch })); } catch (e) {}
+    try { localStorage.setItem('bc.player', JSON.stringify({ seed: Player.game.world.seed, pos: Player.body.pos, yaw: yaw, pitch: pitch })); } catch (e) {}
   };
   Player.loadPos = function () {
     try { var s = localStorage.getItem('bc.player'); return s ? JSON.parse(s) : null; } catch (e) { return null; }

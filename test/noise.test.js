@@ -37,3 +37,11 @@ test('szum jest ciągły (sąsiednie punkty mają bliskie wartości)', () => {
     assert.ok(Math.abs(n.noise2(x, 0.5) - n.noise2(x + 0.01, 0.5)) < 0.1);
   }
 });
+
+test('hash2 ma dużo różnych wartości (nie 256)', () => {
+  const n = BC.Noise.create(5); const set = new Set();
+  for (let x = 0; x < 100; x++) for (let z = 0; z < 100; z++) set.add(n.hash2(x, z));
+  assert.ok(set.size > 9000, 'różnych: ' + set.size);
+  let low = 0; for (let x = 0; x < 200; x++) for (let z = 0; z < 200; z++) if (n.hash2(x, z) < 0.006) low++;
+  assert.ok(low > 100 && low < 400, 'rzadkie zdarzenia: ' + low);
+});
