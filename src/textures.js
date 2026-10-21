@@ -2,7 +2,7 @@
 var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (global.BC = global.BC || {});
 (function (BC) {
   var T = BC.Tex;
-  var TILE = 16, COUNT = 30;
+  var TILE = 16, COUNT = 32;
 
   function rng(seed) { return BC.Noise.mulberry32(seed); }
   function px(ctx, x, y, c) { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); }
@@ -105,6 +105,23 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
     px(ctx, ox + 6, 12, '#3c8a2c'); px(ctx, ox + 7, 11, '#3c8a2c'); px(ctx, ox + 10, 13, '#3c8a2c');
     [[7, 2], [8, 2], [9, 2], [6, 3], [7, 3], [8, 3], [9, 3], [10, 3], [6, 4], [7, 4], [8, 4], [9, 4], [10, 4], [7, 5], [8, 5], [9, 5]].forEach(function (p) { px(ctx, ox + p[0], p[1], '#e8452c'); });
     px(ctx, ox + 7, 3, '#ff8a6a'); px(ctx, ox + 8, 2, '#ff8a6a');
+  };
+
+  painters[T.TORCH] = function (ctx, ox) {
+    for (var y = 6; y < TILE; y++) { px(ctx, ox + 7, y, '#6a4a2a'); px(ctx, ox + 8, y, '#8a6a3a'); }
+    [[7, 2], [8, 2], [6, 3], [7, 3], [8, 3], [9, 3], [6, 4], [7, 4], [8, 4], [9, 4], [7, 5], [8, 5]].forEach(function (p) { px(ctx, ox + p[0], p[1], '#ffb020'); });
+    px(ctx, ox + 7, 1, '#ffe080'); px(ctx, ox + 8, 3, '#fff0a0'); px(ctx, ox + 7, 4, '#ff6a10');
+  };
+  painters[T.APPLE] = function (ctx, ox) {
+    var red = '#d8302c', dark = '#a81e1e', hi = '#ff7a6a';
+    for (var y = 5; y < 14; y++) for (var x = 4; x < 12; x++) {
+      var corner = (y === 5 || y === 13) && (x === 4 || x === 11);
+      if (corner) continue;
+      px(ctx, ox + x, y, (x === 11 || y === 13) ? dark : red);
+    }
+    px(ctx, ox + 5, 6, hi); px(ctx, ox + 6, 6, hi); px(ctx, ox + 5, 7, hi);
+    px(ctx, ox + 8, 4, '#5a3a1a'); px(ctx, ox + 8, 3, '#5a3a1a');
+    px(ctx, ox + 9, 3, '#4fae3c'); px(ctx, ox + 10, 3, '#4fae3c'); px(ctx, ox + 10, 2, '#4fae3c');
   };
 
   function createAtlas() {

@@ -6,7 +6,8 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
     PLANKS: 8, GLASS: 9, FLOWER: 10, SAPLING: 11, BEDROCK: 12,
     WOOL_RED: 13, WOOL_ORANGE: 14, WOOL_YELLOW: 15, WOOL_GREEN: 16,
     WOOL_BLUE: 17, WOOL_PURPLE: 18, WOOL_PINK: 19, WOOL_WHITE: 20,
-    SNOW: 21, CACTUS: 22, BRICK: 23, COBBLE: 24, GRAVEL: 25, TULIP: 26
+    SNOW: 21, CACTUS: 22, BRICK: 23, COBBLE: 24, GRAVEL: 25, TULIP: 26,
+    TORCH: 27, APPLE: 28
   };
 
   // Indeksy kafli w atlasie (zob. textures.js)
@@ -15,7 +16,8 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
     LEAVES: 8, PLANKS: 9, GLASS: 10, FLOWER: 11, SAPLING: 12, BEDROCK: 13,
     WOOL_RED: 14, WOOL_ORANGE: 15, WOOL_YELLOW: 16, WOOL_GREEN: 17,
     WOOL_BLUE: 18, WOOL_PURPLE: 19, WOOL_PINK: 20, WOOL_WHITE: 21,
-    SNOW_TOP: 22, SNOW_SIDE: 23, CACTUS_SIDE: 24, CACTUS_TOP: 25, BRICK: 26, COBBLE: 27, GRAVEL: 28, TULIP: 29
+    SNOW_TOP: 22, SNOW_SIDE: 23, CACTUS_SIDE: 24, CACTUS_TOP: 25, BRICK: 26, COBBLE: 27, GRAVEL: 28, TULIP: 29,
+    TORCH: 30, APPLE: 31
   };
 
   function def(name, opts) {
@@ -26,6 +28,10 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
       cross: !!opts.cross,
       placeable: opts.placeable !== false,
       breakable: opts.breakable !== false,
+      item: !!opts.item,          // przedmiot do plecaka, nie blok w świecie
+      light: !!opts.light,        // świeci (pochodnia)
+      burnable: !!opts.burnable,  // spala go płomień Charmandera
+      drop: opts.drop,            // co wpada do plecaka po zniszczeniu (undefined = ten sam blok, null = nic)
       tex: opts.tex
     };
   }
@@ -33,18 +39,18 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
 
   var BlockInfo = [];
   BlockInfo[Blocks.AIR] = def('Powietrze', { solid: false, transparent: true, placeable: false, tex: uni(0) });
-  BlockInfo[Blocks.GRASS] = def('Trawa', { tex: { top: T.GRASS_TOP, side: T.GRASS_SIDE, bottom: T.DIRT } });
+  BlockInfo[Blocks.GRASS] = def('Trawa', { drop: Blocks.DIRT, tex: { top: T.GRASS_TOP, side: T.GRASS_SIDE, bottom: T.DIRT } });
   BlockInfo[Blocks.DIRT] = def('Ziemia', { tex: uni(T.DIRT) });
-  BlockInfo[Blocks.STONE] = def('Kamień', { tex: uni(T.STONE) });
+  BlockInfo[Blocks.STONE] = def('Kamień', { drop: Blocks.COBBLE, tex: uni(T.STONE) });
   BlockInfo[Blocks.SAND] = def('Piasek', { tex: uni(T.SAND) });
-  BlockInfo[Blocks.WATER] = def('Woda', { solid: false, transparent: true, placeable: false, tex: uni(T.WATER) });
-  BlockInfo[Blocks.LOG] = def('Pień', { tex: { top: T.LOG_TOP, side: T.LOG_SIDE, bottom: T.LOG_TOP } });
-  BlockInfo[Blocks.LEAVES] = def('Liście', { transparent: true, tex: uni(T.LEAVES) });
-  BlockInfo[Blocks.PLANKS] = def('Deski', { tex: uni(T.PLANKS) });
+  BlockInfo[Blocks.WATER] = def('Woda', { solid: false, transparent: true, placeable: false, drop: null, tex: uni(T.WATER) });
+  BlockInfo[Blocks.LOG] = def('Pień', { burnable: true, tex: { top: T.LOG_TOP, side: T.LOG_SIDE, bottom: T.LOG_TOP } });
+  BlockInfo[Blocks.LEAVES] = def('Liście', { transparent: true, burnable: true, drop: null, tex: uni(T.LEAVES) });
+  BlockInfo[Blocks.PLANKS] = def('Deski', { burnable: true, tex: uni(T.PLANKS) });
   BlockInfo[Blocks.GLASS] = def('Szkło', { transparent: true, tex: uni(T.GLASS) });
-  BlockInfo[Blocks.FLOWER] = def('Kwiatek', { solid: false, transparent: true, cross: true, tex: uni(T.FLOWER) });
-  BlockInfo[Blocks.SAPLING] = def('Sadzonka', { solid: false, transparent: true, cross: true, tex: uni(T.SAPLING) });
-  BlockInfo[Blocks.BEDROCK] = def('Skała macierzysta', { placeable: false, breakable: false, tex: uni(T.BEDROCK) });
+  BlockInfo[Blocks.FLOWER] = def('Kwiatek', { solid: false, transparent: true, cross: true, burnable: true, tex: uni(T.FLOWER) });
+  BlockInfo[Blocks.SAPLING] = def('Sadzonka', { solid: false, transparent: true, cross: true, burnable: true, tex: uni(T.SAPLING) });
+  BlockInfo[Blocks.BEDROCK] = def('Skała macierzysta', { placeable: false, breakable: false, drop: null, tex: uni(T.BEDROCK) });
   BlockInfo[Blocks.WOOL_RED] = def('Wełna czerwona', { tex: uni(T.WOOL_RED) });
   BlockInfo[Blocks.WOOL_ORANGE] = def('Wełna pomarańczowa', { tex: uni(T.WOOL_ORANGE) });
   BlockInfo[Blocks.WOOL_YELLOW] = def('Wełna żółta', { tex: uni(T.WOOL_YELLOW) });
@@ -58,12 +64,16 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
   BlockInfo[Blocks.BRICK] = def('Cegła', { tex: uni(T.BRICK) });
   BlockInfo[Blocks.COBBLE] = def('Bruk', { tex: uni(T.COBBLE) });
   BlockInfo[Blocks.GRAVEL] = def('Żwir', { tex: uni(T.GRAVEL) });
-  BlockInfo[Blocks.TULIP] = def('Tulipan', { solid: false, transparent: true, cross: true, tex: uni(T.TULIP) });
+  BlockInfo[Blocks.TULIP] = def('Tulipan', { solid: false, transparent: true, cross: true, burnable: true, tex: uni(T.TULIP) });
+  BlockInfo[Blocks.TORCH] = def('Pochodnia', { solid: false, transparent: true, cross: true, light: true, tex: uni(T.TORCH) });
+  BlockInfo[Blocks.APPLE] = def('Jabłko', { solid: false, transparent: true, placeable: false, item: true, drop: null, tex: uni(T.APPLE) });
+  [Blocks.WOOL_RED, Blocks.WOOL_ORANGE, Blocks.WOOL_YELLOW, Blocks.WOOL_GREEN, Blocks.WOOL_BLUE, Blocks.WOOL_PURPLE, Blocks.WOOL_PINK, Blocks.WOOL_WHITE]
+    .forEach(function (id) { BlockInfo[id].burnable = true; });
 
   var Hotbar = [
     [Blocks.GRASS, Blocks.DIRT, Blocks.STONE, Blocks.SAND, Blocks.LOG, Blocks.LEAVES, Blocks.PLANKS, Blocks.GLASS, Blocks.FLOWER],
     [Blocks.WOOL_RED, Blocks.WOOL_ORANGE, Blocks.WOOL_YELLOW, Blocks.WOOL_GREEN, Blocks.WOOL_BLUE, Blocks.WOOL_PURPLE, Blocks.WOOL_PINK, Blocks.WOOL_WHITE, Blocks.SAPLING],
-    [Blocks.SNOW, Blocks.CACTUS, Blocks.BRICK, Blocks.COBBLE, Blocks.GRAVEL, Blocks.TULIP, Blocks.SAPLING, Blocks.GLASS, Blocks.PLANKS]
+    [Blocks.SNOW, Blocks.CACTUS, Blocks.BRICK, Blocks.COBBLE, Blocks.GRAVEL, Blocks.TULIP, Blocks.TORCH, Blocks.GLASS, Blocks.PLANKS]
   ];
 
   BC.Blocks = Blocks;

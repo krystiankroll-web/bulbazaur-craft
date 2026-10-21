@@ -3,7 +3,7 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
 if (typeof require !== 'undefined' && !BC.World) { require('./world.js'); }
 (function (BC) {
   var B = BC.Blocks;
-  function cast(world, origin, dir, maxDist) {
+  function cast(world, origin, dir, maxDist, stopAtWater) {
     var len = Math.hypot(dir.x, dir.y, dir.z) || 1;
     var dx = dir.x / len, dy = dir.y / len, dz = dir.z / len;
     var x = Math.floor(origin.x), y = Math.floor(origin.y), z = Math.floor(origin.z);
@@ -17,7 +17,7 @@ if (typeof require !== 'undefined' && !BC.World) { require('./world.js'); }
     var nx = 0, ny = 0, nz = 0, t = 0;
     for (var i = 0; i < 512; i++) {
       var id = world.get(x, y, z);
-      if (id !== B.AIR && id !== B.WATER && i > 0) {
+      if (id !== B.AIR && (stopAtWater || id !== B.WATER) && i > 0) {
         return { hit: true, x: x, y: y, z: z, nx: nx, ny: ny, nz: nz, dist: t, id: id };
       }
       if (tMX < tMY && tMX < tMZ) { t = tMX; x += stepX; tMX += tDX; nx = -stepX; ny = 0; nz = 0; }
