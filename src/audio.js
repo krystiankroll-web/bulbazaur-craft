@@ -135,6 +135,19 @@
       case 'home': [67, 72, 76].forEach(function (m, i) { tone(sfxGain, 'triangle', freq(m), t + i * 0.08, 0.35, 0.15, 0.01); }); break;
       case 'click': sweep(sfxGain, 'sine', 800, 500, t, 0.05, 0.12); break;
       case 'nope': sweep(sfxGain, 'square', 200, 150, t, 0.12, 0.06); break;
+      case 'hurt': sweep(sfxGain, 'square', 300, 120, t, 0.18, 0.12); noise(sfxGain, t, 0.12, 'lowpass', 800, 200, 0.2); break;
+      case 'faint': [72, 67, 64, 60, 55].forEach(function (m, i) { tone(sfxGain, 'triangle', freq(m), t + i * 0.14, 0.4, 0.16, 0.01); }); break;
+      case 'mhit': noise(sfxGain, t, 0.1, 'bandpass', 900, 300, 0.3); sweep(sfxGain, 'square', 240, 120, t, 0.08, 0.06); break;
+      case 'mdie': sweep(sfxGain, 'sawtooth', 300, 40, t, 0.35, 0.1); noise(sfxGain, t, 0.3, 'lowpass', 1200, 100, 0.3); break;
+      case 'eat': [0, 0.1, 0.2].forEach(function (o) { noise(sfxGain, t + o, 0.07, 'bandpass', 1200, 600, 0.25); }); tone(sfxGain, 'sine', freq(79), t + 0.3, 0.2, 0.1, 0.01); break;
+      case 'thunder': noise(sfxGain, t, 0.5, 'lowpass', 3000, 120, 0.7); sweep(sfxGain, 'sawtooth', 1200, 60, t, 0.25, 0.12); break;
+      case 'flame': noise(sfxGain, t, 0.35, 'bandpass', 700, 1800, 0.35); break;
+      case 'water': noise(sfxGain, t, 0.3, 'highpass', 1500, 600, 0.3); sweep(sfxGain, 'sine', 600, 300, t, 0.2, 0.08); break;
+      case 'bubble': [0, 0.08, 0.18].forEach(function (o, i) { sweep(sfxGain, 'sine', 500 + i * 150, 1000 + i * 200, t + o, 0.1, 0.12); }); break;
+      case 'dash': noise(sfxGain, t, 0.2, 'highpass', 800, 3000, 0.25); sweep(sfxGain, 'sine', 400, 900, t, 0.15, 0.1); break;
+      case 'craft': [60, 64, 67].forEach(function (m, i) { tone(sfxGain, 'square', freq(m), t + i * 0.06, 0.15, 0.06, 0.01); }); break;
+      case 'night': [64, 60, 57].forEach(function (m, i) { tone(sfxGain, 'triangle', freq(m), t + i * 0.25, 0.8, 0.1, 0.05); }); break;
+      case 'morning': [60, 64, 67, 72].forEach(function (m, i) { tone(sfxGain, 'triangle', freq(m), t + i * 0.12, 0.5, 0.12, 0.02); }); break;
     }
   };
   BC.Audio = A;

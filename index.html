@@ -3,63 +3,196 @@
 <head>
 <meta charset="utf-8">
 <title>Bulbazaur Craft</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1d3b1d">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #8fd3ff; font-family: "Segoe UI", Arial, sans-serif; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8fd3ff; font-family: "Segoe UI", Arial, sans-serif; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; overscroll-behavior: none; }
   #game canvas { display: block; }
   #crosshair { position: fixed; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; pointer-events: none; }
   #crosshair:before, #crosshair:after { content: ""; position: absolute; background: rgba(255,255,255,.9); mix-blend-mode: difference; }
   #crosshair:before { left: 9px; top: 0; width: 2px; height: 20px; }
   #crosshair:after { top: 9px; left: 0; width: 20px; height: 2px; }
-  #hotbar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; background: rgba(0,0,0,.45); border-radius: 8px; }
+  #hotbar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; background: rgba(0,0,0,.45); border-radius: 8px; z-index: 5; }
   .slot { width: 48px; height: 48px; border: 2px solid rgba(255,255,255,.25); border-radius: 6px; background: rgba(0,0,0,.3); display: flex; align-items: center; justify-content: center; position: relative; }
   .slot img { width: 36px; height: 36px; image-rendering: pixelated; }
   .slot.active { border-color: #fff; box-shadow: 0 0 0 2px #ffd34a inset; }
+  .slot.empty img { opacity: .3; }
   .slot span { position: absolute; left: 4px; top: 2px; font-size: 11px; color: #fff; text-shadow: 0 1px 2px #000; }
+  .slot em { position: absolute; right: 4px; bottom: 2px; font-size: 12px; font-style: normal; font-weight: 700; color: #fff; text-shadow: 0 1px 2px #000; }
   #page { position: fixed; left: 50%; bottom: 72px; transform: translateX(-50%); color: #fff; text-shadow: 0 1px 2px #000; font-size: 13px; }
+  #powers { position: fixed; left: 118px; top: 14px; color: #fff; text-shadow: 0 1px 2px #000; font-size: 13px; }
+  #powers b { background: rgba(255,255,255,.9); color: #222; border-radius: 4px; padding: 0 5px; }
   #portrait { position: fixed; left: 14px; top: 14px; width: 96px; height: 96px; image-rendering: pixelated; border-radius: 10px; background: rgba(0,0,0,.35); }
-  #msg { position: fixed; left: 50%; top: 20%; transform: translateX(-50%); color: #fff; font-size: 22px; font-weight: 600; text-shadow: 0 2px 4px #000; opacity: 0; transition: opacity .3s; pointer-events: none; }
-  #overlay { position: fixed; inset: 0; background: rgba(20,40,20,.85); color: #fff; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; text-align: center; }
+  #stats { position: fixed; left: 118px; top: 38px; display: none; flex-direction: column; gap: 2px; font-size: 16px; line-height: 1.1; text-shadow: 0 1px 2px #000; }
+  body.survival #stats { display: flex; }
+  #stats i { font-style: normal; } #stats i.h { opacity: .55; } #stats i.e { opacity: .35; }
+  #hearts.low { animation: pulse .8s infinite; }
+  @keyframes pulse { 50% { transform: scale(1.08); } }
+  #apples { color: #fff; font-size: 14px; }
+  #day { position: fixed; right: 14px; top: 14px; color: #fff; font-size: 15px; font-weight: 600; text-shadow: 0 1px 2px #000; background: rgba(0,0,0,.35); padding: 4px 10px; border-radius: 8px; }
+  #msg { position: fixed; left: 50%; top: 20%; transform: translateX(-50%); color: #fff; font-size: 22px; font-weight: 600; text-shadow: 0 2px 4px #000; opacity: 0; transition: opacity .3s; pointer-events: none; text-align: center; max-width: 90vw; }
+  #hurt { position: fixed; inset: 0; background: radial-gradient(ellipse at center, rgba(255,0,0,0) 40%, rgba(220,0,0,.9) 100%); opacity: 0; pointer-events: none; transition: opacity .15s; }
+  #overlay { position: fixed; inset: 0; background: rgba(20,40,20,.88); color: #fff; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; text-align: center; z-index: 20; overflow-y: auto; padding: 10px; box-sizing: border-box; }
+  #overlay .panel { display: none; flex-direction: column; align-items: center; gap: 12px; max-width: 760px; width: 100%; }
   #overlay h1 { margin: 0; font-size: 44px; letter-spacing: 1px; text-shadow: 0 3px 0 #2d6a2d; }
-  #overlay p { max-width: 520px; line-height: 1.5; margin: 0; }
+  #overlay h2 { margin: 0; font-size: 26px; }
+  #overlay p { max-width: 560px; line-height: 1.5; margin: 0; }
   #overlay button { font-size: 20px; padding: 12px 34px; border: 0; border-radius: 10px; cursor: pointer; background: #6fcf5a; color: #10301a; font-weight: 700; }
   #overlay button.secondary { background: rgba(255,255,255,.2); color: #fff; font-size: 15px; padding: 8px 20px; }
+  #overlay button:disabled { opacity: .4; cursor: default; }
+  #overlay .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
   #overlay table { border-collapse: collapse; font-size: 14px; }
   #overlay td { padding: 2px 10px; text-align: left; }
   #overlay kbd { background: #fff; color: #222; border-radius: 4px; padding: 1px 6px; font-family: inherit; font-weight: 700; }
+  #status { font-size: 15px; opacity: .85; }
+  .cards { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .card { width: 150px; padding: 10px; border-radius: 12px; background: rgba(255,255,255,.1); border: 3px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .card.sel { border-color: #ffd34a; background: rgba(255,255,255,.2); }
+  .card canvas { width: 64px; height: 64px; image-rendering: pixelated; border-radius: 8px; background: rgba(0,0,0,.3); }
+  .card .ttl { font-weight: 700; font-size: 16px; }
+  .card .dsc { font-size: 12px; opacity: .85; line-height: 1.35; }
+  .card .big { font-size: 40px; }
+  .recipe { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.1); padding: 8px 12px; border-radius: 10px; font-size: 15px; flex-wrap: wrap; justify-content: center; }
+  .recipe img { width: 28px; height: 28px; image-rendering: pixelated; vertical-align: middle; }
+  .recipe small { width: 100%; opacity: .7; font-size: 12px; }
+  .recipe .arr { font-size: 20px; }
+  .recipe button { font-size: 15px !important; padding: 6px 16px !important; }
   #coords { position: fixed; left: 14px; bottom: 14px; color: #fff; font-size: 13px; text-shadow: 0 1px 2px #000; font-variant-numeric: tabular-nums; }
   #water { position: fixed; inset: 0; background: rgba(30, 90, 210, .38); display: none; pointer-events: none; }
-  #loading { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: #1d3b1d; color: #fff; font-size: 24px; }
+  #loading { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: #1d3b1d; color: #fff; font-size: 24px; z-index: 30; }
   #overlay .opts { display: flex; gap: 22px; font-size: 15px; }
   #overlay label { cursor: pointer; }
   #err { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: #223; color: #fff; padding: 20px; text-align: center; }
+  .touchOnly { display: none; } body.touch .touchOnly { display: block; } body.touch .deskOnly { display: none; }
+
+  /* --- sterowanie dotykowe --- */
+  #touch { display: none; position: fixed; inset: 0; z-index: 4; pointer-events: none; }
+  #touchArea { position: absolute; inset: 0; pointer-events: auto; }
+  #joy { position: absolute; left: max(22px, env(safe-area-inset-left)); bottom: 90px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.35); pointer-events: none; }
+  #joyKnob { position: absolute; left: 39px; top: 39px; width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,.55); }
+  .tb { position: absolute; pointer-events: auto; width: 62px; height: 62px; border-radius: 50%; background: rgba(0,0,0,.45); border: 2px solid rgba(255,255,255,.5); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; line-height: 1; gap: 2px; text-shadow: 0 1px 2px #000; }
+  .tb b { font-size: 24px; }
+  .tb.down { background: rgba(255,211,74,.6); }
+  .tb.big { width: 78px; height: 78px; }
+  .tb.big b { font-size: 30px; }
+  #tbJump { right: max(22px, env(safe-area-inset-right)); bottom: 96px; }
+  #tbDown { right: max(22px, env(safe-area-inset-right)); bottom: 190px; }
+  #tbBreak { right: 112px; bottom: 150px; }
+  #tbPlace { right: 112px; bottom: 76px; }
+  #tbQ { right: max(22px, env(safe-area-inset-right)); top: 60px; }
+  #tbE { right: 96px; top: 60px; }
+  #tbSuper { right: 170px; top: 60px; }
+  #tbFly { right: 244px; top: 60px; }
+  #tbEat { right: 244px; top: 60px; }
+  #tbView { left: 118px; top: 14px; width: 44px; height: 44px; }
+  #tbView b { font-size: 20px; }
+  #tbMenu { left: 170px; top: 14px; width: 44px; height: 44px; }
+  #tbMenu b { font-size: 20px; }
+  #tbPage { left: 50%; bottom: 68px; margin-left: 130px; width: 40px; height: 40px; }
+  #tbPage b { font-size: 18px; }
+  body.touch #powers, body.touch #page, body.touch #coords { display: none; }
+  body.menu #touch, body.menu #hotbar, body.menu #crosshair, body.menu #msg, body.touch.menu #stats, body.touch.menu #day, body.touch.menu #portrait { display: none !important; }
+  body.touch #crosshair { width: 14px; height: 14px; margin: -7px 0 0 -7px; }
+  body.touch .slot { width: 40px; height: 40px; } body.touch .slot img { width: 30px; height: 30px; }
+  body.touch #hotbar { bottom: 10px; gap: 3px; }
+  body.touch #stats { top: 16px; left: 118px; font-size: 14px; }
+  body.touch #portrait { width: 64px; height: 64px; }
+  body.touch #tbView { left: 90px; } body.touch #tbMenu { left: 142px; }
+  body.touch.survival #tbView { top: 66px; left: 14px; } body.touch.survival #tbMenu { top: 66px; left: 66px; }
+  body.touch #overlay h1 { font-size: 30px; }
+  @media (max-height: 420px) { body.touch #overlay { gap: 8px; } body.touch #overlay h1 { font-size: 24px; } .card { width: 120px; padding: 6px; } .card canvas { width: 44px; height: 44px; } .card .dsc { display: none; } }
 </style>
 </head>
 <body>
 <div id="game"></div>
 <div id="crosshair"></div>
 <canvas id="portrait" width="64" height="64"></canvas>
+<div id="powers"></div>
+<div id="stats"><div id="hearts"></div><div id="food"></div><div id="air"></div><div id="apples"></div></div>
+<div id="day"></div>
 <div id="water"></div>
+<div id="hurt"></div>
 <div id="msg"></div>
 <div id="coords"></div>
 <div id="loading"></div>
 <div id="page"></div>
 <div id="hotbar"></div>
+
+<div id="touch">
+  <div id="touchArea"></div>
+  <div id="joy"><div id="joyKnob"></div></div>
+  <div class="tb big" id="tbJump"><b>⬆️</b><span>Skok</span></div>
+  <div class="tb" id="tbDown"><b>⬇️</b><span>W dół</span></div>
+  <div class="tb" id="tbBreak"><b>⛏️</b><span>Niszcz</span></div>
+  <div class="tb" id="tbPlace"><b>🧱</b><span>Stawiaj</span></div>
+  <div class="tb" id="tbQ"><b>🌿</b><span>Moc</span></div>
+  <div class="tb" id="tbE"><b>🌱</b><span>Moc</span></div>
+  <div class="tb" id="tbSuper"><b>⬆️</b><span>Super</span></div>
+  <div class="tb" id="tbFly"><b>🪽</b><span>Lataj</span></div>
+  <div class="tb" id="tbEat"><b>🍎</b><span>Jedz</span></div>
+  <div class="tb" id="tbView"><b>👀</b></div>
+  <div class="tb" id="tbMenu"><b>☰</b></div>
+  <div class="tb" id="tbPage"><b>⇄</b></div>
+</div>
+
 <div id="overlay">
-  <h1>🌱 Bulbazaur Craft</h1>
-  <p>Zbuduj co chcesz w nieskończonym świecie! Jesteś Bulbazaurem: masz pnącza, nasionka i potrafisz wysoko skakać.</p>
-  <table>
-    <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>chodzenie</td><td><kbd>Mysz</kbd></td><td>rozglądanie</td></tr>
-    <tr><td><kbd>Spacja</kbd></td><td>skok, 2× szybko = latanie</td><td><kbd>Shift</kbd>+<kbd>Spacja</kbd></td><td>wysoki skok</td></tr>
-    <tr><td><kbd>LPM</kbd> / <kbd>PPM</kbd></td><td>niszcz / stawiaj blok</td><td><kbd>1</kbd>–<kbd>9</kbd>, kółko</td><td>wybór bloku</td></tr>
-    <tr><td><kbd>Q</kbd></td><td>pnącza (niszczy z daleka)</td><td><kbd>E</kbd></td><td>nasionko (rośnie drzewo)</td></tr>
-    <tr><td><kbd>Tab</kbd></td><td>kolejna strona bloków</td><td><kbd>F5</kbd></td><td>zobacz Bulbazaura</td></tr>
-    <tr><td><kbd>W</kbd><kbd>W</kbd></td><td>bieg (2× szybko W)</td><td><kbd>H</kbd></td><td>wróć do domu</td></tr>
-    <tr><td><kbd>M</kbd></td><td>muzyka wł./wył.</td><td><kbd>Esc</kbd></td><td>menu</td></tr>
-  </table>
-  <div class="opts"><label><input type="checkbox" id="chkMusic" checked> 🎵 Muzyka</label><label><input type="checkbox" id="chkSfx" checked> 🔊 Dźwięki</label></div>
-  <button id="btnPlay">Graj</button>
-  <button id="btnNew" class="secondary">Nowy świat</button>
+  <div class="panel" id="menuMain">
+    <h1>🌱 Bulbazaur Craft</h1>
+    <p>Zbuduj co chcesz w nieskończonym świecie albo przetrwaj noc pełną Cieniaków. Wybierz Pokémona: Bulbazaur, Charmander, Squirtle lub Pikachu, każdy ma inne moce.</p>
+    <div id="status"></div>
+    <table class="deskOnly">
+      <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>chodzenie</td><td><kbd>Mysz</kbd></td><td>rozglądanie</td></tr>
+      <tr><td><kbd>Spacja</kbd></td><td>skok, 2× szybko = latanie (kreatywny)</td><td><kbd>Shift</kbd>+<kbd>Spacja</kbd></td><td>super skok Bulbazaura</td></tr>
+      <tr><td><kbd>LPM</kbd> / <kbd>PPM</kbd></td><td>niszcz lub atakuj / stawiaj blok</td><td><kbd>1</kbd>–<kbd>9</kbd>, kółko</td><td>wybór bloku</td></tr>
+      <tr><td><kbd>Q</kbd> / <kbd>E</kbd></td><td>moce Pokémona</td><td><kbd>R</kbd></td><td>zjedz jabłko (przetrwanie)</td></tr>
+      <tr><td><kbd>Tab</kbd></td><td>kolejna strona bloków</td><td><kbd>F5</kbd></td><td>zobacz Pokémona</td></tr>
+      <tr><td><kbd>W</kbd><kbd>W</kbd></td><td>bieg (2× szybko W)</td><td><kbd>H</kbd></td><td>wróć do domu</td></tr>
+      <tr><td><kbd>M</kbd></td><td>muzyka wł./wył.</td><td><kbd>Esc</kbd></td><td>menu</td></tr>
+    </table>
+    <p class="touchOnly">📱 Lewy krążek: chodzenie. Przeciągaj palcem po ekranie: rozglądanie. Przyciski po prawej: skok, niszcz, stawiaj i moce. Najlepiej gra się poziomo.</p>
+    <div class="row">
+      <button id="btnPlay">Graj</button>
+      <button id="btnNew" class="secondary">Nowy świat</button>
+      <button id="btnHero" class="secondary">Zmień Pokémona</button>
+      <button id="btnCraft" class="secondary">🔨 Warsztat</button>
+    </div>
+    <div class="opts"><label><input type="checkbox" id="chkMusic" checked> 🎵 Muzyka</label><label><input type="checkbox" id="chkSfx" checked> 🔊 Dźwięki</label></div>
+  </div>
+
+  <div class="panel" id="panelNew">
+    <h2>Nowy świat</h2>
+    <div class="cards" id="modes">
+      <div class="card sel" data-mode="creative"><div class="big">🎨</div><div class="ttl">Kreatywny</div><div class="dsc">Nieskończone bloki, latanie, zero potworów. Tylko budowanie.</div></div>
+      <div class="card" data-mode="survival"><div class="big">⚔️</div><div class="ttl">Przetrwanie</div><div class="dsc">Zbieraj bloki, jedz jabłka, buduj schronienie. W nocy przychodzą Cieniaki.</div></div>
+    </div>
+    <h2>Wybierz Pokémona</h2>
+    <div class="cards" id="heroesNew"></div>
+    <div class="row"><button id="btnStart">Start!</button><button id="btnBackNew" class="secondary">Wróć</button></div>
+  </div>
+
+  <div class="panel" id="panelHero">
+    <h2>Zmień Pokémona</h2>
+    <div class="cards" id="heroesPick"></div>
+    <div class="row"><button id="btnBackHero">Gotowe</button></div>
+  </div>
+
+  <div class="panel" id="panelCraft">
+    <h2>🔨 Warsztat</h2>
+    <div id="recipes"></div>
+    <div class="row"><button id="btnBackCraft">Gotowe</button></div>
+  </div>
+
+  <div class="panel" id="panelDeath">
+    <h2>😵 Zemdlałeś!</h2>
+    <p>Cieniaki były za silne albo było za wysoko. Spokojnie: budzisz się w domu, a plecak masz przy sobie.</p>
+    <div class="row"><button id="btnRespawn">Wstań i wróć do domu</button></div>
+  </div>
 </div>
 <div id="err"><div><h2>Nie udało się załadować silnika 3D</h2><p>Sprawdź połączenie z internetem i odśwież stronę.</p></div></div>
 
@@ -70,9 +203,12 @@
 <script src="src/mesher.js"></script>
 <script src="src/physics.js"></script>
 <script src="src/raycast.js"></script>
+<script src="src/survival.js"></script>
 <script src="src/textures.js"></script>
 <script src="src/audio.js"></script>
-<script src="src/bulbasaur.js"></script>
+<script src="src/heroes.js"></script>
+<script src="src/monsters.js"></script>
+<script src="src/touch.js"></script>
 <script src="src/hud.js"></script>
 <script src="src/player.js"></script>
 <script src="src/main.js"></script>

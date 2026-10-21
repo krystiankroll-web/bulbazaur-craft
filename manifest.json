@@ -1,0 +1,15 @@
+{
+  "name": "Bulbazaur Craft",
+  "short_name": "BulbaCraft",
+  "description": "Gra w stylu Minecraft z Pokémonami: kreatywny i przetrwanie.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1d3b1d",
+  "theme_color": "#1d3b1d",
+  "lang": "pl",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
