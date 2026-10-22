@@ -101,45 +101,6 @@ test('cykl dnia: południe jasno, północ ciemno, numer dnia', () => {
   assert.equal(S.dayNumber(D * 2.5), 3);
 });
 
-test('potwór idzie do gracza i skacze, gdy ściana go blokuje', () => {
-  const w = new BC.World({ terrain: false, height: 16 });
-  w.ensureChunk(0, 0); w.ensureChunk(-1, 0); w.ensureChunk(0, -1); w.ensureChunk(-1, -1);
-  // podłoga z kamienia na y=1 (y=0 to skała, set jest tam ignorowany), ściana na x=3 o wysokości 1.
-  for (let x = -2; x < 10; x++) for (let z = -2; z <= 2; z++) w.set(x, 1, z, B.STONE);
-  for (let z = -2; z <= 2; z++) w.set(3, 2, z, B.STONE);
-  const m = S.makeMonster(0.5, 2, 0.5);
-  const target = { x: 6.5, y: 2, z: 0.5 };
-  let jumped = false, start = m.body.pos.x;
-  for (let i = 0; i < 240; i++) {
-    S.monsterStep(m, w, target, 1 / 60);
-    if (m.body.vel.y > 1) jumped = true;
-  }
-  assert.ok(m.body.pos.x > start + 1, 'potwór powinien się zbliżyć');
-  assert.ok(jumped, 'potwór powinien skoczyć przy ścianie');
-});
-
-test('potwór atakuje z cooldownem 1 s i ginie po 6 hp', () => {
-  const w = new BC.World({ terrain: false, height: 16 });
-  w.ensureChunk(0, 0);
-  const m = S.makeMonster(0.5, 0, 0.5);
-  m.attackCd = 0;
-  const t = { x: 1.2, y: 0, z: 0.5 };
-  assert.equal(S.monsterStep(m, w, t, 1 / 60).attack, true);
-  assert.equal(S.monsterStep(m, w, t, 1 / 60).attack, false);
-  for (let i = 0; i < 58; i++) assert.equal(S.monsterStep(m, w, t, 1 / 60).attack, false);
-  assert.equal(S.monsterStep(m, w, t, 1 / 60).attack, true);
-  assert.equal(S.monsterHit(m, 4), false);
-  assert.equal(S.monsterHit(m, 2), true);
-});
-
-test('promień trafia potwora', () => {
-  const m = S.makeMonster(5, 0, 0);
-  const d = S.rayHitsMonster(m, { x: 0, y: 1, z: 0 }, { x: 1, y: 0, z: 0 }, 10);
-  assert.ok(d !== null && d > 4.6 && d < 4.8);
-  assert.equal(S.rayHitsMonster(m, { x: 0, y: 1, z: 0 }, { x: 0, y: 0, z: 1 }, 10), null);
-  assert.equal(S.rayHitsMonster(m, { x: 0, y: 1, z: 0 }, { x: 1, y: 0, z: 0 }, 3), null);
-});
-
 test('lot: głód ×2, w przetrwaniu tylko przy jedzeniu > 0', () => {
   const st = S.makeStats();
   S.tickStats(st, 20, { flying: true });

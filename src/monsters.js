@@ -1,6 +1,6 @@
 // Potwory nocy („Cieniaki”): spawn, modele, AI (logika w survival.js), obrażenia, płonięcie o świcie.
 (function (BC) {
-  var S = BC.Survival, B = BC.Blocks;
+  var C = BC.Creatures, B = BC.Blocks;
   var M = { list: [], max: 6, spawnTimer: 0, onAttack: null };
   var purple = 0x3a2650, dark = 0x1e1230, eye = 0xff3030;
 
@@ -48,7 +48,7 @@
     return { x: x + 0.5, y: y + 1.01, z: z + 0.5 };
   }
   M.spawnAt = function (p) {
-    var m = S.makeMonster(p.x, p.y, p.z);
+    var m = C.make('cieniak', p.x, p.y, p.z);
     m.mesh = makeMesh();
     M.game.scene.add(m.mesh.group);
     M.list.push(m);
@@ -84,8 +84,9 @@
         continue;
       }
       if (!world.hasChunk(Math.floor(b.pos.x) >> 4, Math.floor(b.pos.z) >> 4)) continue;
-      var res = S.monsterStep(m, world, { x: pp.x, y: pp.y, z: pp.z }, dt);
-      if (res.attack && M.onAttack) M.onAttack(m);
+      C.step(m, world, { players: [{ x: pp.x, y: pp.y, z: pp.z }] }, dt).forEach(function (e) {
+        if (e.type === 'attack' && M.onAttack) M.onAttack(m, e.dmg);
+      });
       // model
       var g = m.mesh.group;
       g.position.set(b.pos.x, b.pos.y, b.pos.z);
@@ -114,7 +115,7 @@
     var best = null, bd = Infinity;
     M.list.forEach(function (m) {
       if (m.dead) return;
-      var d = S.rayHitsMonster(m, origin, dir, maxDist);
+      var d = C.rayHit(m, origin, dir, maxDist);
       if (d !== null && d < bd) { bd = d; best = m; }
     });
     return best ? { m: best, dist: bd } : null;
@@ -141,7 +142,7 @@
       var dx = m.body.pos.x - from.x, dz = m.body.pos.z - from.z, l = Math.hypot(dx, dz) || 1;
       knock = { x: dx / l * 6, z: dz / l * 6 };
     }
-    var dead = S.monsterHit(m, dmg, knock);
+    var dead = C.hit(m, dmg, knock);
     BC.Audio.sfx(dead ? 'mdie' : 'mhit');
     if (dead) { m.deadT = 0; }
     return dead;

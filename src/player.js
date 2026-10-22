@@ -93,7 +93,7 @@
     });
     window.addEventListener('blur', function () { keys = {}; sprint = false; });
     if (BC.isTouch) { Player.fallback = true; BC.Touch.init(Player); }
-    BC.Monsters.onAttack = function (m) { Player.hurt(S.MONSTER_DMG, m.body.pos); };
+    BC.Monsters.onAttack = function (m, dmg) { Player.hurt(dmg, m.body.pos); };
     game.updaters.push(Player.update);
     BC.HUD.setInv(Player.inv, Player.mode);
   };

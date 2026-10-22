@@ -1,4 +1,4 @@
-// Logika trybu przetrwania (czysta, testowalna w Node): statystyki, ekwipunek, dropy, warsztat, cykl dnia, AI potwora.
+// Logika trybu przetrwania (czysta, testowalna w Node): statystyki, ekwipunek, dropy, warsztat, cykl dnia.
 var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (global.BC = global.BC || {});
 if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
 (function (BC) {
@@ -101,54 +101,6 @@ if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
   S.isNight = function (time) { return S.sunLight(time) < 0.2; };
   S.dayNumber = function (time) { return Math.floor(time / S.DAY_LENGTH) + 1; };
   S.START_TIME = S.DAY_LENGTH * 0.05;
-
-  // ---------- potwory ----------
-  S.MONSTER_HP = 6; S.MONSTER_SPEED = 3.2; S.MONSTER_SIGHT = 24; S.MONSTER_REACH = 1.6; S.MONSTER_DMG = 2;
-  S.makeMonster = function (x, y, z) {
-    var m = { body: BC.Physics.makeBody(x, y, z), hp: S.MONSTER_HP, attackCd: 1.2, burning: 0, dead: false, phase: Math.random() * 6.28, hurtT: 0 };
-    m.body.w = 0.6; m.body.h = 1.7;
-    return m;
-  };
-  // Krok AI i fizyki. Zwraca { attack: bool }.
-  S.monsterStep = function (m, world, target, dt) {
-    var b = m.body;
-    var dx = target.x - b.pos.x, dz = target.z - b.pos.z, dy = target.y - b.pos.y;
-    var dist = Math.hypot(dx, dz), dist3 = Math.hypot(dx, dy, dz);
-    var wx = 0, wz = 0;
-    if (dist < S.MONSTER_SIGHT && dist > 0.9 && !m.burning) { wx = dx / dist * S.MONSTER_SPEED; wz = dz / dist * S.MONSTER_SPEED; }
-    var k = b.inWater ? 0.1 : 0.25;
-    b.vel.x += (wx - b.vel.x) * k;
-    b.vel.z += (wz - b.vel.z) * k;
-    if (b.inWater && b.vel.y < 2) b.vel.y = 3;
-    var wantX = wx, wantZ = wz;
-    BC.Physics.step(world, b, dt);
-    var blocked = (wantX !== 0 && b.vel.x === 0) || (wantZ !== 0 && b.vel.z === 0);
-    if (blocked && b.onGround) b.vel.y = 9;
-    m.attackCd -= dt; m.hurtT = Math.max(0, m.hurtT - dt);
-    if (dist3 < S.MONSTER_REACH && m.attackCd <= 0 && !m.burning) { m.attackCd = 1.0; return { attack: true }; }
-    return { attack: false };
-  };
-  S.monsterHit = function (m, dmg, knock) {
-    m.hp -= dmg; m.hurtT = 0.3;
-    if (knock) { m.body.vel.x += knock.x; m.body.vel.z += knock.z; m.body.vel.y = Math.max(m.body.vel.y, 5); }
-    if (m.hp <= 0) m.dead = true;
-    return m.dead;
-  };
-  // Przecięcie promienia z AABB potwora (slab). Zwraca odległość lub null.
-  S.rayHitsMonster = function (m, origin, dir, maxDist) {
-    var b = m.body, hw = b.w / 2;
-    var min = [b.pos.x - hw, b.pos.y, b.pos.z - hw], max = [b.pos.x + hw, b.pos.y + b.h, b.pos.z + hw];
-    var o = [origin.x, origin.y, origin.z], d = [dir.x, dir.y, dir.z];
-    var tmin = 0, tmax = maxDist;
-    for (var i = 0; i < 3; i++) {
-      if (Math.abs(d[i]) < 1e-9) { if (o[i] < min[i] || o[i] > max[i]) return null; continue; }
-      var t1 = (min[i] - o[i]) / d[i], t2 = (max[i] - o[i]) / d[i];
-      if (t1 > t2) { var tmp = t1; t1 = t2; t2 = tmp; }
-      tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2);
-      if (tmin > tmax) return null;
-    }
-    return tmin;
-  };
 
   BC.Survival = S;
 })(BC);
