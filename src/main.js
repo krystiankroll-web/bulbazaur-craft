@@ -237,7 +237,7 @@
     Game.updateClouds(dt, p.x, p.z);
     var light = Game.updateDay(dt, p.x, p.y, p.z);
     Game.updateTorches(dt, p.x, p.y, p.z);
-    if (Game.mode === 'survival') BC.Monsters.update(dt, t, BC.Player, light);
+    BC.Monsters.update(dt, t, [BC.Player], light, Game.mode);
     Game.renderer.render(Game.scene, Game.camera);
   };
 })(window.BC);

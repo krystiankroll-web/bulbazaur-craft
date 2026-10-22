@@ -1,129 +1,226 @@
-// Potwory nocy („Cieniaki”): spawn, modele, AI (logika w survival.js), obrażenia, płonięcie o świcie.
+// Menedżer stworzeń: zwierzątka (dzień, oba tryby) i potwory (noc, przetrwanie), modele, kolce, wybuchy,
+// przedmioty na ziemi i serduszka. Logika stworzeń jest w creatures.js.
 (function (BC) {
-  var C = BC.Creatures, B = BC.Blocks;
-  var M = { list: [], max: 6, spawnTimer: 0, onAttack: null };
-  var purple = 0x3a2650, dark = 0x1e1230, eye = 0xff3030;
-
-  function makeMesh() {
-    var g = new THREE.Group();
-    var mat = new THREE.MeshLambertMaterial({ color: purple });
-    var matD = new THREE.MeshLambertMaterial({ color: dark });
-    function bx(w, h, d, m, x, y, z, parent) { var o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); (parent || g).add(o); return o; }
-    bx(0.5, 0.7, 0.3, mat, 0, 0.95, 0);              // tułów
-    var head = bx(0.5, 0.5, 0.5, mat, 0, 1.55, 0);  // głowa
-    var e1 = bx(0.1, 0.12, 0.05, new THREE.MeshBasicMaterial({ color: eye }), -0.13, 0.05, -0.26, head);
-    var e2 = bx(0.1, 0.12, 0.05, new THREE.MeshBasicMaterial({ color: eye }), 0.13, 0.05, -0.26, head);
-    bx(0.5, 0.08, 0.5, matD, 0, 0.29, 0, head);
-    var arms = [], legs = [];
-    [[-0.35], [0.35]].forEach(function (a) {
-      var p = new THREE.Group(); p.position.set(a[0], 1.25, 0); g.add(p);
-      bx(0.2, 0.6, 0.2, matD, 0, -0.3, 0, p); arms.push(p);
-    });
-    [[-0.13], [0.13]].forEach(function (a) {
-      var p = new THREE.Group(); p.position.set(a[0], 0.6, 0); g.add(p);
-      bx(0.22, 0.6, 0.22, matD, 0, -0.3, 0, p); legs.push(p);
-    });
-    return { group: g, arms: arms, legs: legs, mats: [mat, matD], eyes: [e1, e2] };
-  }
+  var C = BC.Creatures, B = BC.Blocks, Models = BC.CreatureModels;
+  var M = { list: [], spikes: [], drops: [], fx: [], maxHostile: 6, maxAnimals: 10, spawnTimer: 0, animalTimer: 0,
+    onAttack: null, onHurt: null, onPickup: null };
+  var VOICE = { krowa: 'moo', owca: 'baa', kurczak: 'cluck', swinka: 'oink' };
+  var DROP_LIFE = 300;
 
   M.init = function (game) {
-    M.game = game; M.list = [];
-    M.max = BC.isTouch ? 4 : 6;
+    M.game = game; M.list = []; M.spikes = []; M.drops = []; M.fx = [];
+    M.maxHostile = BC.isTouch ? 4 : 6;
+    M.maxAnimals = BC.isTouch ? 6 : 10;
   };
+  // Usuwa potwory i kolce (po omdleniu). Zwierzątka zostają.
   M.clear = function () {
-    M.list.forEach(function (m) { M.game.scene.remove(m.mesh.group); });
-    M.list = [];
+    for (var i = M.list.length - 1; i >= 0; i--) if (M.list[i].hostile) M.remove(i);
+    M.spikes.forEach(function (s) { M.game.scene.remove(s.mesh); });
+    M.spikes = [];
   };
-  function surfaceSpawn(world, px, pz) {
-    var ang = Math.random() * Math.PI * 2, r = 16 + Math.random() * 16;
-    var x = Math.floor(px + Math.cos(ang) * r), z = Math.floor(pz + Math.sin(ang) * r);
+  function count(hostile) { var n = 0; M.list.forEach(function (c) { if (c.hostile === hostile && !c.dead) n++; }); return n; }
+
+  // ---------- spawn ----------
+  function torchNear(world, x, y, z) {
+    for (var dx = -4; dx <= 4; dx++) for (var dz = -4; dz <= 4; dz++) for (var dy = -1; dy <= 3; dy++)
+      if (world.get(x + dx, y + dy, z + dz) === B.TORCH) return true;
+    return false;
+  }
+  function freeAbove(world, x, y, z) {
+    return !BC.BlockInfo[world.get(x, y + 1, z)].solid && !BC.BlockInfo[world.get(x, y + 2, z)].solid && world.get(x, y + 1, z) !== B.WATER;
+  }
+  function ringPoint(px, pz, r0, r1) {
+    var ang = Math.random() * Math.PI * 2, r = r0 + Math.random() * (r1 - r0);
+    return { x: Math.floor(px + Math.cos(ang) * r), z: Math.floor(pz + Math.sin(ang) * r) };
+  }
+  function hostileSpawn(world, px, pz) {
+    var q = ringPoint(px, pz, 16, 32);
+    if (!world.hasChunk(q.x >> 4, q.z >> 4)) return null;
+    var y = world.surfaceY(q.x, q.z), top = world.get(q.x, y, q.z);
+    if (top === B.WATER || top === B.AIR || !freeAbove(world, q.x, y, q.z) || torchNear(world, q.x, y, q.z)) return null;
+    return { x: q.x + 0.5, y: y + 1.01, z: q.z + 0.5 };
+  }
+  function grassAt(world, x, z) {
     if (!world.hasChunk(x >> 4, z >> 4)) return null;
     var y = world.surfaceY(x, z);
-    var top = world.get(x, y, z);
-    if (top === B.WATER || top === B.AIR) return null;
-    if (world.get(x, y + 1, z) !== B.AIR || world.get(x, y + 2, z) !== B.AIR) return null;
-    // nie przy pochodni
-    for (var dx = -4; dx <= 4; dx++) for (var dz = -4; dz <= 4; dz++) for (var dy = -1; dy <= 3; dy++)
-      if (world.get(x + dx, y + dy, z + dz) === B.TORCH) return null;
+    if (world.get(x, y, z) !== B.GRASS || !freeAbove(world, x, y, z)) return null;
     return { x: x + 0.5, y: y + 1.01, z: z + 0.5 };
   }
-  M.spawnAt = function (p) {
-    var m = C.make('cieniak', p.x, p.y, p.z);
-    m.mesh = makeMesh();
-    M.game.scene.add(m.mesh.group);
-    M.list.push(m);
-    return m;
+  function spawnHerd(world, px, pz) {
+    var q = ringPoint(px, pz, 24, 40), first = grassAt(world, q.x, q.z);
+    if (!first) return;
+    var type = C.ANIMALS[Math.floor(Math.random() * C.ANIMALS.length)];
+    var n = 2 + Math.floor(Math.random() * 3);
+    for (var i = 0; i < n && count(false) < M.maxAnimals; i++) {
+      var p = i === 0 ? first : grassAt(world, q.x + Math.floor(Math.random() * 5) - 2, q.z + Math.floor(Math.random() * 5) - 2);
+      if (p) M.spawnAt(p, type);
+    }
+  }
+  M.spawnAt = function (p, type) {
+    var c = C.make(type || 'cieniak', p.x, p.y, p.z);
+    return M.add(c);
   };
-
-  M.update = function (dt, t, player, light) {
-    var world = M.game.world, pp = player.body.pos;
-    var night = light < 0.2;
-    M.spawnTimer -= dt;
-    if (night && M.list.length < M.max && M.spawnTimer <= 0) {
-      M.spawnTimer = 3;
-      var p = surfaceSpawn(world, pp.x, pp.z);
-      if (p) { M.spawnAt(p); if (M.list.length === 1) BC.HUD.message('Nadchodzą Cieniaki…', 1500); }
-    }
-    for (var i = M.list.length - 1; i >= 0; i--) {
-      var m = M.list[i], b = m.body;
-      var far = Math.hypot(b.pos.x - pp.x, b.pos.z - pp.z);
-      if (far > 56 || b.pos.y < -5) { M.remove(i); continue; }
-      if (!night && light > 0.45 && !m.burning) m.burning = 0.001;
-      if (m.burning) {
-        m.burning += dt;
-        var s = Math.max(0.05, 1 - m.burning / 2.5);
-        m.mesh.group.scale.set(s, s, s);
-        m.mesh.mats[0].color.setHex(0x8a3a10); m.mesh.mats[1].color.setHex(0xff8020);
-        if (m.burning > 2.5) { M.remove(i); continue; }
-      }
-      if (m.dead) {
-        m.deadT = (m.deadT || 0) + dt;
-        var sc = Math.max(0.01, 1 - m.deadT * 4);
-        m.mesh.group.scale.set(sc * 1.4, sc, sc * 1.4);
-        if (m.deadT > 0.25) { M.remove(i); continue; }
-        continue;
-      }
-      if (!world.hasChunk(Math.floor(b.pos.x) >> 4, Math.floor(b.pos.z) >> 4)) continue;
-      C.step(m, world, { players: [{ x: pp.x, y: pp.y, z: pp.z }] }, dt).forEach(function (e) {
-        if (e.type === 'attack' && M.onAttack) M.onAttack(m, e.dmg);
-      });
-      // model
-      var g = m.mesh.group;
-      g.position.set(b.pos.x, b.pos.y, b.pos.z);
-      var dx = pp.x - b.pos.x, dz = pp.z - b.pos.z;
-      g.rotation.y = Math.atan2(-dx, -dz) + Math.PI;
-      var sp = Math.hypot(b.vel.x, b.vel.z);
-      var amp = Math.min(0.7, sp * 0.2);
-      m.mesh.legs[0].rotation.x = Math.sin(t * 8 + m.phase) * amp;
-      m.mesh.legs[1].rotation.x = -Math.sin(t * 8 + m.phase) * amp;
-      m.mesh.arms[0].rotation.x = -Math.PI / 2 + Math.sin(t * 3 + m.phase) * 0.15;
-      m.mesh.arms[1].rotation.x = -Math.PI / 2 - Math.sin(t * 3 + m.phase) * 0.15;
-      if (!m.burning) {
-        var hurt = m.hurtT > 0;
-        m.mesh.mats[0].color.setHex(hurt ? 0xff6060 : purple);
-        m.mesh.mats[1].color.setHex(hurt ? 0xd04040 : dark);
-      }
-    }
+  M.add = function (c) {
+    c.model = Models.make(c.type);
+    c.voiceT = 5 + Math.random() * 15;
+    M.game.scene.add(c.model.group);
+    M.list.push(c);
+    return c;
   };
   M.remove = function (i) {
-    var m = M.list[i];
-    M.game.scene.remove(m.mesh.group);
+    M.game.scene.remove(M.list[i].model.group);
     M.list.splice(i, 1);
   };
-  // Najbliższy potwór na promieniu (do ataku stuknięciem / LPM).
-  M.aim = function (origin, dir, maxDist) {
-    var best = null, bd = Infinity;
-    M.list.forEach(function (m) {
-      if (m.dead) return;
-      var d = C.rayHit(m, origin, dir, maxDist);
-      if (d !== null && d < bd) { bd = d; best = m; }
-    });
-    return best ? { m: best, dist: bd } : null;
+
+  // ---------- efekty ----------
+  function fxMesh(geo, color, opacity) {
+    var m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: opacity === undefined ? 1 : opacity }));
+    M.game.scene.add(m);
+    return m;
+  }
+  M.hearts = function (c) {
+    var p = c.body.pos;
+    for (var i = 0; i < 3; i++) {
+      var m = fxMesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), 0xff3a5a);
+      m.position.set(p.x + (i - 1) * 0.3, p.y + c.body.h + 0.2, p.z);
+      M.fx.push({ kind: 'heart', mesh: m, t: -i * 0.12, life: 0.9 });
+    }
   };
+  function boom(x, y, z, r) {
+    var m = fxMesh(new THREE.SphereGeometry(1, 12, 10), 0xffd080, 0.8);
+    m.position.set(x, y, z);
+    M.fx.push({ kind: 'boom', mesh: m, t: 0, life: 0.45, r: r });
+  }
+  function dropItem(item, x, y, z) {
+    var atlas = M.game.atlas, tex = BC.BlockInfo[item].tex.side;
+    var cv = document.createElement('canvas'); cv.width = cv.height = atlas.tile;
+    cv.getContext('2d').drawImage(atlas.canvas, tex * atlas.tile, 0, atlas.tile, atlas.tile, 0, 0, atlas.tile, atlas.tile);
+    var t = new THREE.CanvasTexture(cv); t.magFilter = THREE.NearestFilter; t.colorSpace = THREE.SRGBColorSpace;
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t }));
+    s.scale.set(0.45, 0.45, 0.45);
+    M.game.scene.add(s);
+    M.drops.push({ item: item, x: x, y: y, z: z, t: 0, mesh: s });
+  }
+
+  // ---------- pętla ----------
+  // players: tablica obiektów z .body (pierwszy = gracz na tym urządzeniu).
+  M.update = function (dt, t, players, light, mode) {
+    var game = M.game, world = game.world;
+    var ps = players.map(function (p) { var b = p.body.pos; return { x: b.x, y: b.y, z: b.z }; });
+    var me = ps[0], night = light < 0.2;
+
+    if (mode === 'survival') {
+      M.spawnTimer -= dt;
+      if (night && count(true) < M.maxHostile && M.spawnTimer <= 0) {
+        M.spawnTimer = 3;
+        var hp = hostileSpawn(world, me.x, me.z);
+        if (hp) { M.spawnAt(hp, C.pickHostile(Math.random)); if (count(true) === 1) BC.HUD.message('Nadchodzą potwory…', 1500); }
+      }
+    }
+    M.animalTimer -= dt;
+    if (light > 0.45 && count(false) < M.maxAnimals && M.animalTimer <= 0) { M.animalTimer = 4; spawnHerd(world, me.x, me.z); }
+
+    for (var i = M.list.length - 1; i >= 0; i--) {
+      var c = M.list[i], b = c.body;
+      var far = Infinity;
+      ps.forEach(function (p) { far = Math.min(far, Math.hypot(b.pos.x - p.x, b.pos.z - p.z)); });
+      if (far > (c.hostile ? 56 : 64) || b.pos.y < -5) { M.remove(i); continue; }
+      if (c.exploded) { M.remove(i); continue; }
+      if (c.dead) {
+        c.deadT = (c.deadT || 0) + dt;
+        var sc = Math.max(0.01, 1 - c.deadT * 4) * c.model.scale;
+        c.model.group.scale.set(sc * 1.4, sc, sc * 1.4);
+        if (c.deadT > 0.25) { M.remove(i); C.children(c).forEach(M.add); }
+        continue;
+      }
+      if (c.hostile && light > 0.45 && !c.burning) c.burning = 0.001;
+      if (c.burning) {
+        c.burning += dt;
+        if (c.burning > 2.5) { M.remove(i); continue; }
+      }
+      if (!world.hasChunk(Math.floor(b.pos.x) >> 4, Math.floor(b.pos.z) >> 4)) continue;
+      C.step(c, world, { players: ps }, dt).forEach(function (e) { handle(c, e, ps); });
+      if (c.exploded) continue;
+      Models.animate(c, c.model, t);
+      if (c.burning) c.model.group.scale.setScalar(Math.max(0.05, 1 - c.burning / 2.5) * c.model.scale);
+      if (!c.hostile) {
+        c.voiceT -= dt;
+        if (c.voiceT <= 0) { c.voiceT = 10 + Math.random() * 15; if (far < 12) BC.Audio.sfx(VOICE[c.type]); }
+      }
+    }
+
+    // kolce
+    for (var k = M.spikes.length - 1; k >= 0; k--) {
+      var s = M.spikes[k], r = C.stepSpike(s, world, ps, dt);
+      s.mesh.position.set(s.pos.x, s.pos.y, s.pos.z);
+      if (r.done) {
+        game.scene.remove(s.mesh); M.spikes.splice(k, 1);
+        if (r.hit === 0 && M.onHurt) M.onHurt(C.TYPES.kolczak.dmg, { x: s.pos.x - s.dir.x, y: s.pos.y, z: s.pos.z - s.dir.z });
+      }
+    }
+    // przedmioty na ziemi
+    for (var d = M.drops.length - 1; d >= 0; d--) {
+      var it = M.drops[d];
+      it.t += dt;
+      it.mesh.position.set(it.x, it.y + 0.25 + Math.sin(t * 3 + d) * 0.08, it.z);
+      var taken = Math.hypot(it.x - me.x, it.y - me.y, it.z - me.z) < 1.5;
+      if (taken || it.t > DROP_LIFE) {
+        game.scene.remove(it.mesh); M.drops.splice(d, 1);
+        if (taken) { BC.Audio.sfx('pop'); if (M.onPickup) M.onPickup(it.item); }
+      }
+    }
+    // efekty
+    for (var f = M.fx.length - 1; f >= 0; f--) {
+      var fx = M.fx[f];
+      fx.t += dt;
+      if (fx.t < 0) continue;
+      var u = fx.t / fx.life;
+      if (fx.kind === 'heart') { fx.mesh.position.y += dt * 1.2; fx.mesh.material.opacity = 1 - u; }
+      else if (fx.kind === 'boom') { fx.mesh.scale.setScalar(0.3 + fx.r * 1.3 * u); fx.mesh.material.opacity = 0.8 * (1 - u); }
+      if (fx.t > fx.life) { game.scene.remove(fx.mesh); fx.mesh.geometry.dispose(); fx.mesh.material.dispose(); M.fx.splice(f, 1); }
+    }
+  };
+
+  function handle(c, e, ps) {
+    var game = M.game, near = Math.hypot(c.body.pos.x - ps[0].x, c.body.pos.z - ps[0].z) < 16;
+    if (e.type === 'attack') { if (e.target === 0 && M.onAttack) M.onAttack(c, e.dmg); }
+    else if (e.type === 'shoot') {
+      var s = C.makeSpike(e.from, e.dir);
+      s.mesh = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.45), new THREE.MeshLambertMaterial({ color: 0xf0e090 }));
+      s.mesh.position.set(s.pos.x, s.pos.y, s.pos.z);
+      s.mesh.lookAt(s.pos.x + e.dir.x, s.pos.y + e.dir.y, s.pos.z + e.dir.z);
+      game.scene.add(s.mesh); M.spikes.push(s);
+      if (near) BC.Audio.sfx('shoot');
+    } else if (e.type === 'explode') {
+      var keys = {};
+      C.blastBlocks(game.world, e.x, e.y, e.z, e.r).forEach(function (q) { game.world.set(q[0], q[1], q[2], B.AIR).forEach(function (key) { keys[key] = 1; }); });
+      game.rebuildChunks(Object.keys(keys));
+      boom(e.x, e.y, e.z, e.r);
+      BC.Audio.sfx('boom'); game.flash = Math.max(game.flash, 0.5);
+      var p = ps[0], dmg = C.blastDamage(Math.hypot(p.x - e.x, p.y + 0.9 - e.y, p.z - e.z));
+      if (dmg > 0 && M.onHurt) M.onHurt(dmg, { x: e.x, y: e.y, z: e.z });
+    } else if (e.type === 'lay') { dropItem(e.item, e.x, e.y, e.z); if (near) BC.Audio.sfx('pop'); }
+    else if (e.type === 'hop') { if (near) BC.Audio.sfx('hop'); }
+    else if (e.type === 'hiss') BC.Audio.sfx('hiss');
+  }
+
+  // ---------- celowanie i interakcje ----------
+  function aimAt(origin, dir, maxDist, hostile) {
+    var best = null, bd = Infinity;
+    M.list.forEach(function (c) {
+      if (c.dead || c.hostile !== hostile) return;
+      var d = C.rayHit(c, origin, dir, maxDist);
+      if (d !== null && d < bd) { bd = d; best = c; }
+    });
+    return best ? { c: best, dist: bd } : null;
+  }
+  // Najbliższy potwór na promieniu (do ataku stuknięciem / LPM).
+  M.aim = function (origin, dir, maxDist) { var r = aimAt(origin, dir, maxDist, true); return r ? { m: r.c, dist: r.dist } : null; };
+  M.aimAnimal = function (origin, dir, maxDist) { return aimAt(origin, dir, maxDist, false); };
   M.alongRay = function (origin, dir, maxDist, radius) {
     var out = [];
     M.list.forEach(function (m) {
-      if (m.dead) return;
+      if (m.dead || !m.hostile) return;
       var b = m.body, cx = b.pos.x - origin.x, cy = b.pos.y + b.h / 2 - origin.y, cz = b.pos.z - origin.z;
       var tt = cx * dir.x + cy * dir.y + cz * dir.z;
       if (tt < 0 || tt > maxDist) return;
@@ -133,9 +230,9 @@
     return out;
   };
   M.inRadius = function (p, r) {
-    return M.list.filter(function (m) { return !m.dead && Math.hypot(m.body.pos.x - p.x, m.body.pos.y - p.y, m.body.pos.z - p.z) < r; });
+    return M.list.filter(function (m) { return !m.dead && m.hostile && Math.hypot(m.body.pos.x - p.x, m.body.pos.y - p.y, m.body.pos.z - p.z) < r; });
   };
-  // Zadaje obrażenia; zwraca true, gdy potwór pokonany (i wtedy losuje jabłko do plecaka).
+  // Zadaje obrażenia potworowi; zwraca true, gdy pokonany.
   M.hit = function (m, dmg, from) {
     var knock = null;
     if (from) {
@@ -144,8 +241,15 @@
     }
     var dead = C.hit(m, dmg, knock);
     BC.Audio.sfx(dead ? 'mdie' : 'mhit');
-    if (dead) { m.deadT = 0; }
+    if (dead) m.deadT = 0;
     return dead;
+  };
+  // Głaskanie zwierzątka przez gracza na tym urządzeniu. Zwraca id przedmiotu albo null.
+  M.pet = function (c) {
+    var item = C.pet(c, 0);
+    M.hearts(c);
+    BC.Audio.sfx('pet'); BC.Audio.sfx(VOICE[c.type]);
+    return item;
   };
   BC.Monsters = M;
 })(window.BC);

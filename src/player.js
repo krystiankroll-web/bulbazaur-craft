@@ -94,6 +94,13 @@
     window.addEventListener('blur', function () { keys = {}; sprint = false; });
     if (BC.isTouch) { Player.fallback = true; BC.Touch.init(Player); }
     BC.Monsters.onAttack = function (m, dmg) { Player.hurt(dmg, m.body.pos); };
+    BC.Monsters.onHurt = function (dmg, from) { Player.hurt(dmg, from); };
+    BC.Monsters.onPickup = function (item) {
+      var name = Info[item].name;
+      if (Player.mode !== 'survival') { BC.HUD.message(name + '!', 800); return; }
+      S.invAdd(Player.inv, item, 1); BC.HUD.setInv(Player.inv, Player.mode);
+      BC.HUD.message('+1 ' + name, 900);
+    };
     game.updaters.push(Player.update);
     BC.HUD.setInv(Player.inv, Player.mode);
   };
@@ -319,6 +326,8 @@
 
   // ---------- akcje na blokach ----------
   Player.primaryAction = function () {
+    var ah = BC.Monsters.aimAnimal(eye(), lookDir(), HIT_REACH), bh0 = Player.aim(REACH);
+    if (ah && (!bh0.hit || ah.dist < bh0.dist)) { Player.pet(ah.c); return; }
     if (Player.mode === 'survival') {
       var mh = BC.Monsters.aim(eye(), lookDir(), HIT_REACH);
       var bh = Player.aim(REACH);
@@ -327,6 +336,8 @@
     Player.breakBlock(REACH);
   };
   Player.tapAction = function () {
+    var ah = BC.Monsters.aimAnimal(eye(), lookDir(), HIT_REACH);
+    if (ah) { Player.pet(ah.c); return; }
     if (Player.mode !== 'survival') return;
     var mh = BC.Monsters.aim(eye(), lookDir(), HIT_REACH);
     if (mh) Player.attack(mh.m, 2);
@@ -335,8 +346,17 @@
     if (BC.Monsters.hit(m, dmg, Player.body.pos)) Player.onMonsterKilled(m);
   };
   Player.onMonsterKilled = function (m) {
-    if (Player.mode === 'survival' && Math.random() < 0.5) { S.invAdd(Player.inv, B.APPLE, 1); BC.HUD.setInv(Player.inv, Player.mode); BC.HUD.message('Cieniak pokonany! +1 jabłko', 1200); }
-    else BC.HUD.message('Cieniak pokonany!', 1000);
+    var name = BC.Creatures.TYPES[m.type].name;
+    if (Player.mode === 'survival' && Math.random() < 0.5) { S.invAdd(Player.inv, B.APPLE, 1); BC.HUD.setInv(Player.inv, Player.mode); BC.HUD.message(name + ' pokonany! +1 jabłko', 1200); }
+    else BC.HUD.message(name + ' pokonany!', 1000);
+  };
+  // Głaskanie zwierzątka: serduszka, idzie za graczem, czasem coś daje.
+  Player.pet = function (c) {
+    var item = BC.Monsters.pet(c), name = BC.Creatures.TYPES[c.type].name;
+    if (item !== null && Player.mode === 'survival') {
+      S.invAdd(Player.inv, item, 1); BC.HUD.setInv(Player.inv, Player.mode);
+      BC.HUD.message(name + ' ❤ +1 ' + Info[item].name, 1300);
+    } else BC.HUD.message(name + ' ❤', 900);
   };
   Player.breakBlock = function (reach, noDrop) {
     var hit = Player.aim(reach);

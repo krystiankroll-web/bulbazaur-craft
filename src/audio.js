@@ -147,6 +147,16 @@
       case 'dash': noise(sfxGain, t, 0.2, 'highpass', 800, 3000, 0.25); sweep(sfxGain, 'sine', 400, 900, t, 0.15, 0.1); break;
       case 'craft': [60, 64, 67].forEach(function (m, i) { tone(sfxGain, 'square', freq(m), t + i * 0.06, 0.15, 0.06, 0.01); }); break;
       case 'night': [64, 60, 57].forEach(function (m, i) { tone(sfxGain, 'triangle', freq(m), t + i * 0.25, 0.8, 0.1, 0.05); }); break;
+      case 'pet': tone(sfxGain, 'sine', freq(84), t, 0.12, 0.12, 0.01); tone(sfxGain, 'sine', freq(88), t + 0.09, 0.18, 0.12, 0.01); break;
+      case 'pop': sweep(sfxGain, 'sine', 400, 900, t, 0.08, 0.15); break;
+      case 'hop': sweep(sfxGain, 'sine', 200, 110, t, 0.12, 0.15); noise(sfxGain, t, 0.06, 'lowpass', 500, 200, 0.12); break;
+      case 'hiss': noise(sfxGain, t, 1.4, 'highpass', 2500, 5000, 0.22); break;
+      case 'boom': noise(sfxGain, t, 0.9, 'lowpass', 1600, 60, 0.9); sweep(sfxGain, 'sawtooth', 130, 30, t, 0.6, 0.15); break;
+      case 'shoot': sweep(sfxGain, 'triangle', 900, 400, t, 0.1, 0.1); break;
+      case 'moo': sweep(sfxGain, 'sawtooth', 150, 115, t, 0.7, 0.05); sweep(sfxGain, 'sine', 150, 115, t, 0.7, 0.1); break;
+      case 'baa': [0, 0.07, 0.14, 0.21].forEach(function (o) { sweep(sfxGain, 'square', 430, 400, t + o, 0.08, 0.03); }); break;
+      case 'cluck': sweep(sfxGain, 'square', 900, 600, t, 0.05, 0.05); sweep(sfxGain, 'square', 1000, 650, t + 0.1, 0.05, 0.05); break;
+      case 'oink': noise(sfxGain, t, 0.16, 'bandpass', 450, 300, 0.25); sweep(sfxGain, 'square', 230, 180, t, 0.15, 0.04); break;
       case 'morning': [60, 64, 67, 72].forEach(function (m, i) { tone(sfxGain, 'triangle', freq(m), t + i * 0.12, 0.5, 0.12, 0.02); }); break;
     }
   };

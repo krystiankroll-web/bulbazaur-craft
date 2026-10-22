@@ -53,16 +53,22 @@ przyciski po prawej to skok, niszcz, stawiaj i moce. Stuknięcie w Cieniaka to a
 ## Przetrwanie
 - 10 serc, 10 udek jedzenia, powietrze pod wodą. Jedzenie spada powoli; najedzony leczysz się sam. Z głodu nie da się zemdleć (spada do 1 serca).
 - Zniszczony blok trafia do plecaka (trawa daje ziemię, kamień bruk). Stawiasz tylko to, co masz. Liczniki są na pasku bloków.
-- Jabłka: czasem z liści, czasem z pokonanego Cieniaka. Start: 3 jabłka. Jedzenie: R.
+- Jedzenie: jabłka (z liści, od świnki, z pokonanych potworów), mleko od krowy, jajka od kurczaka. Start: 3 jabłka. Jedzenie: R (zjada to, czego masz najwięcej).
 - Warsztat (menu): 1 pień → 4 deski, 1 piasek → 1 szkło, 1 pień → 4 pochodnie. Pochodnie świecą i odstraszają spawn Cieniaków.
-- Noc trwa około 3,5 min. Cieniaki idą do gracza, skaczą przez bloki, o świcie płoną. Zbuduj dom i rozpal pochodnie.
+- Noc trwa około 3,5 min. Wychodzą potwory, o świcie płoną. Zbuduj dom i rozpal pochodnie.
 - Omdlenie = powrót do domu z pełnymi sercami, plecak zostaje.
+
+## Zwierzątka i potwory
+- W dzień na trawie pasą się 🐄 krowy, 🐑 owce, 🐔 kurczaki i 🐷 świnki (w obu trybach). Nie da się ich skrzywdzić.
+- Kliknij / stuknij zwierzątko, żeby je pogłaskać: serduszka, a potem idzie za tobą przez 20 s.
+- Krowa daje mleko (raz na minutę), owca białą wełnę (potem jest łysa przez 2 min), kurczak sam znosi jajka, świnka wygrzebuje jabłka. Przedmioty z ziemi zbierasz, podchodząc.
+- Potwory (tylko Przetrwanie, w nocy): **Cieniak** idzie i bije; **Skoczek** skacze i po pokonaniu dzieli się na dwa małe; **Kolczak** trzyma dystans i strzela kolcami (schowaj się za blokiem); **Wybuchacz** podchodzi, syczy i miga — uciekaj dalej niż 4 kratki, bo wybuchnie i zrobi dziurę.
 
 ## Dla programisty
 - Brak builda i zależności poza Three.js z CDN. Kod w `src/`, klasyczne skrypty.
-- Testy logiki (świat, szum, mesher, fizyka, promień, przetrwanie, AI potwora): `node --test test/*.test.js`
+- Testy logiki (świat, szum, mesher, fizyka, promień, przetrwanie, stworzenia): `node --test test/*.test.js`
 - `manifest.json`, `sw.js`, `icon-*.png` robią z gry aplikację PWA (ikona na ekranie telefonu, cache offline). Działają tylko przez `http(s)://`.
-- Projekt: `docs/superpowers/specs/2026-09-05-bulbazaur-craft-design.md`, wersja 3: `docs/superpowers/specs/2026-10-21-bulbazaur-craft-v3.md`
+- Projekt: `docs/superpowers/specs/2026-09-05-bulbazaur-craft-design.md`, wersja 3: `docs/superpowers/specs/2026-10-21-bulbazaur-craft-v3.md`, wersja 4: `docs/superpowers/specs/2026-10-22-bulbazaur-craft-v4-design.md`
 
 ## Uwaga
 Bulbazaur, Charmander, Squirtle i Pikachu są znakami towarowymi Nintendo / Game Freak. Gra powstała do zabawy w domu i nie może być publikowana komercyjnie.
