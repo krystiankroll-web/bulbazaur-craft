@@ -20,6 +20,9 @@ if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
     var c = { id: C.nextId++, type: type, hostile: T.hostile, body: P.makeBody(x, y, z), hp: T.hp, dead: false, hurtT: 0,
       attackCd: 1.2, phase: rand() * 6.28, yaw: rand() * 6.28, burning: 0 };
     c.body.w = T.w; c.body.h = T.h;
+    if (T.hop) c.hopCd = T.hop;
+    if (T.shootEvery) c.shootCd = T.shootEvery;
+    if (T.fuse) c.fuseT = null;
     return c;
   };
 
@@ -52,8 +55,47 @@ if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
     var dx = 0, dz = 0;
     if (seen && n.dist > 0) { dx = (n.p.x - b.pos.x) / n.dist; dz = (n.p.z - b.pos.z) / n.dist; c.yaw = Math.atan2(dx, dz); }
     c.attackCd -= dt;
-    var go = seen && n.dist > 0.9;
-    walk(c, world, go ? dx * T.speed : 0, go ? dz * T.speed : 0, dt);
+    if (T.hop) {
+      // Skoczek porusza się tylko skokami
+      c.hopCd -= dt;
+      if (b.onGround) { b.vel.x = 0; b.vel.z = 0; }
+      if (seen && b.onGround && c.hopCd <= 0 && n.dist > 0.6) {
+        c.hopCd = T.hop;
+        b.vel.y = 8; b.vel.x = dx * T.speed * 1.4; b.vel.z = dz * T.speed * 1.4;
+        ev.push({ type: 'hop' });
+      }
+      if (b.inWater && b.vel.y < 2) b.vel.y = 3;
+      P.step(world, b, dt);
+    } else if (T.shootEvery) {
+      // Kolczak trzyma dystans i strzela
+      var dir = !seen ? 0 : (n.dist < T.keepMin ? -1 : (n.dist > T.keepMax ? 1 : 0));
+      walk(c, world, dx * T.speed * dir, dz * T.speed * dir, dt);
+      c.shootCd -= dt;
+      if (seen && c.shootCd <= 0) {
+        c.shootCd = T.shootEvery;
+        var from = { x: b.pos.x, y: b.pos.y + T.h * 0.7, z: b.pos.z };
+        var tx = n.p.x - from.x, ty = n.p.y + 1 - from.y, tz = n.p.z - from.z, l = Math.hypot(tx, ty, tz) || 1;
+        ev.push({ type: 'shoot', from: from, dir: { x: tx / l, y: ty / l, z: tz / l } });
+      }
+    } else if (T.fuse) {
+      // Wybuchacz: syczy przy graczu, wybucha po T.fuse s, przerywa gdy gracz ucieknie
+      if (c.fuseT === null && seen && n.dist3 <= T.fuseStart) { c.fuseT = 0; ev.push({ type: 'hiss' }); }
+      if (c.fuseT !== null && (!n || n.dist3 > T.fuseCancel)) c.fuseT = null;
+      if (c.fuseT !== null) {
+        c.fuseT += dt;
+        walk(c, world, 0, 0, dt);
+        if (c.fuseT >= T.fuse) {
+          c.dead = true; c.exploded = true;
+          ev.push({ type: 'explode', x: b.pos.x, y: b.pos.y + 0.8, z: b.pos.z, r: T.blast });
+        }
+        return;
+      }
+      var go2 = seen && n.dist > 0.9;
+      walk(c, world, go2 ? dx * T.speed : 0, go2 ? dz * T.speed : 0, dt);
+    } else {
+      var go = seen && n.dist > 0.9;
+      walk(c, world, go ? dx * T.speed : 0, go ? dz * T.speed : 0, dt);
+    }
     if (T.reach > 0 && n && n.dist3 < T.reach && c.attackCd <= 0 && !c.burning) {
       c.attackCd = 1.0;
       ev.push({ type: 'attack', target: n.i, dmg: T.dmg });
@@ -74,9 +116,52 @@ if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
     if (!c.hostile || c.dead) return false;
     c.hp -= dmg; c.hurtT = 0.3;
     if (knock) { c.body.vel.x += knock.x; c.body.vel.z += knock.z; c.body.vel.y = Math.max(c.body.vel.y, 5); }
-    if (c.hp <= 0) c.dead = true;
+    if (c.hp <= 0) { c.dead = true; if (c.fuseT !== undefined) c.fuseT = null; }
     return c.dead;
   };
+
+  // Co powstaje po pokonaniu (Skoczek rozpada się na dwa małe).
+  C.children = function (c) {
+    var T = C.TYPES[c.type];
+    if (!T.split || c.exploded) return [];
+    var p = c.body.pos;
+    return [C.make(T.split, p.x - 0.3, p.y + 0.1, p.z), C.make(T.split, p.x + 0.3, p.y + 0.1, p.z)];
+  };
+
+  // ---------- kolce Kolczaka ----------
+  C.SPIKE_SPEED = 14; C.SPIKE_LIFE = 2;
+  C.makeSpike = function (from, dir) { return { pos: { x: from.x, y: from.y, z: from.z }, dir: dir, t: 0 }; };
+  // Przesuwa kolec. Zwraca { done } albo { done: true, hit: nr gracza }.
+  C.stepSpike = function (s, world, players, dt) {
+    s.t += dt;
+    if (s.t > C.SPIKE_LIFE) return { done: true };
+    var dist = C.SPIKE_SPEED * dt, n = Math.max(1, Math.ceil(dist / 0.25)), d = dist / n;
+    for (var k = 0; k < n; k++) {
+      s.pos.x += s.dir.x * d; s.pos.y += s.dir.y * d; s.pos.z += s.dir.z * d;
+      if (BC.BlockInfo[world.get(Math.floor(s.pos.x), Math.floor(s.pos.y), Math.floor(s.pos.z))].solid) return { done: true };
+      for (var i = 0; i < players.length; i++) {
+        var p = players[i];
+        if (Math.hypot(s.pos.x - p.x, s.pos.y - (p.y + 0.9), s.pos.z - p.z) < 0.6) return { done: true, hit: i };
+      }
+    }
+    return { done: false };
+  };
+
+  // ---------- wybuch ----------
+  // Bloki do usunięcia w kuli o promieniu r (bez powietrza, wody i bloków niezniszczalnych).
+  C.blastBlocks = function (world, x, y, z, r) {
+    var out = [], R = Math.ceil(r);
+    for (var bx = Math.floor(x) - R; bx <= Math.floor(x) + R; bx++)
+      for (var by = Math.floor(y) - R; by <= Math.floor(y) + R; by++)
+        for (var bz = Math.floor(z) - R; bz <= Math.floor(z) + R; bz++) {
+          if (Math.hypot(bx + 0.5 - x, by + 0.5 - y, bz + 0.5 - z) > r) continue;
+          var id = world.get(bx, by, bz);
+          if (id === B.AIR || id === B.WATER || !BC.BlockInfo[id].breakable) continue;
+          out.push([bx, by, bz]);
+        }
+    return out;
+  };
+  C.blastDamage = function (dist) { return Math.max(0, Math.round(7 - 2 * dist)); };
 
   // Przecięcie promienia z AABB stworzenia (slab). Zwraca odległość lub null.
   C.rayHit = function (c, origin, dir, maxDist) {
