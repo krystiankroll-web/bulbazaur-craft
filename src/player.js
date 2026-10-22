@@ -20,7 +20,7 @@
     Player.stats = opts.stats || S.makeStats();
     Player.inv = opts.inv || S.makeInv();
     Player.body = BC.Physics.makeBody(spawn.x, spawn.y, spawn.z);
-    var saved = Player.loadPos();
+    var saved = opts.guest ? null : Player.loadPos();
     if (saved && saved.seed === world.seed) { Player.body.pos = saved.pos; yaw = saved.yaw; pitch = saved.pitch; }
     Player.body.flying = false;
     hurtEl = document.getElementById('hurt');
@@ -95,6 +95,15 @@
     if (BC.isTouch) { Player.fallback = true; BC.Touch.init(Player); }
     BC.Monsters.onAttack = function (m, dmg) { Player.hurt(dmg, m.body.pos); };
     BC.Monsters.onHurt = function (dmg, from) { Player.hurt(dmg, from); };
+    BC.Monsters.onRemote = function (msg) { BC.Net.send(msg); };
+    BC.Net.onHurt = function (dmg, from) { Player.hurt(dmg, from); };
+    BC.Net.onKilled = function (type) { Player.onMonsterKilled({ type: type }); };
+    BC.Net.onGive = function (item, why, name) {
+      var what = BC.BlockInfo[item].name;
+      if (Player.mode === 'survival') { S.invAdd(Player.inv, item, 1); BC.HUD.setInv(Player.inv, Player.mode); }
+      BC.HUD.message(why === 'pet' ? name + ' ❤ +1 ' + what : '+1 ' + what, 1200);
+      if (why === 'pickup') BC.Audio.sfx('pop');
+    };
     BC.Monsters.onPickup = function (item) {
       var name = Info[item].name;
       if (Player.mode !== 'survival') { BC.HUD.message(name + '!', 800); return; }

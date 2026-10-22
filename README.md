@@ -64,9 +64,17 @@ przyciski po prawej to skok, niszcz, stawiaj i moce. Stuknięcie w Cieniaka to a
 - Krowa daje mleko (raz na minutę), owca białą wełnę (potem jest łysa przez 2 min), kurczak sam znosi jajka, świnka wygrzebuje jabłka. Przedmioty z ziemi zbierasz, podchodząc.
 - Potwory (tylko Przetrwanie, w nocy): **Cieniak** idzie i bije; **Skoczek** skacze i po pokonaniu dzieli się na dwa małe; **Kolczak** trzyma dystans i strzela kolcami (schowaj się za blokiem); **Wybuchacz** podchodzi, syczy i miga — uciekaj dalej niż 4 kratki, bo wybuchnie i zrobi dziurę.
 
+## Gra we dwoje (dwa telefony)
+1. Na pierwszym telefonie: Menu → **👫 Graj z kimś** → **Stwórz pokój**. Pojawi się kod z 4 znaków (np. `KAT7`). Stuknij **Wchodzę!** i graj.
+2. Na drugim telefonie: Menu → **👫 Graj z kimś** → wpisz kod, wybierz Pokémona → **Dołącz** → **Wchodzę!**
+- Gracie w świecie pierwszego telefonu, w jego trybie (Kreatywny albo Przetrwanie). Każdy ma swoje serca, głód i plecak.
+- Świat zapisuje się tylko u gospodarza. Gość po wyjściu wraca do swojego świata, nic mu nie znika.
+- Najpewniej działa, gdy oba telefony są w tym samym Wi‑Fi. Połączenie idzie bezpośrednio między telefonami (WebRTC); do zestawienia używa darmowego pośrednika PeerJS, więc potrzebny jest internet.
+- Gdy gospodarz wyjdzie do menu albo schowa aplikację, świat u kolegi na chwilę się zatrzymuje.
+
 ## Dla programisty
-- Brak builda i zależności poza Three.js z CDN. Kod w `src/`, klasyczne skrypty.
-- Testy logiki (świat, szum, mesher, fizyka, promień, przetrwanie, stworzenia): `node --test test/*.test.js`
+- Brak builda. Zależności: Three.js z CDN i PeerJS 1.5.4 wgrany do `vendor/` (gra we dwoje). Kod w `src/`, klasyczne skrypty.
+- Testy logiki (świat, szum, mesher, fizyka, promień, przetrwanie, stworzenia, protokół sieci): `node --test test/*.test.js`
 - `manifest.json`, `sw.js`, `icon-*.png` robią z gry aplikację PWA (ikona na ekranie telefonu, cache offline). Działają tylko przez `http(s)://`.
 - Projekt: `docs/superpowers/specs/2026-09-05-bulbazaur-craft-design.md`, wersja 3: `docs/superpowers/specs/2026-10-21-bulbazaur-craft-v3.md`, wersja 4: `docs/superpowers/specs/2026-10-22-bulbazaur-craft-v4-design.md`
 

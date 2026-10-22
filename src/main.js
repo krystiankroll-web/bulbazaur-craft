@@ -14,6 +14,7 @@
   Game.init = function (world, opts) {
     opts = opts || {};
     Game.world = world;
+    world.onChange = function (x, y, z, id) { if (BC.Net) BC.Net.onLocalBlock(x, y, z, id); };
     Game.mode = opts.mode || 'creative';
     Game.time = (opts.time !== undefined) ? opts.time : S.START_TIME;
     Game.darkness = 0; Game.flash = 0;
@@ -237,7 +238,9 @@
     Game.updateClouds(dt, p.x, p.z);
     var light = Game.updateDay(dt, p.x, p.y, p.z);
     Game.updateTorches(dt, p.x, p.y, p.z);
-    BC.Monsters.update(dt, t, [BC.Player], light, Game.mode);
+    BC.Remote.update(dt, t);
+    BC.Monsters.update(dt, t, BC.Net.players(), light, Game.mode);
+    BC.Net.update(dt);
     Game.renderer.render(Game.scene, Game.camera);
   };
 })(window.BC);

@@ -1,4 +1,4 @@
-// Start gry: menu (nowy świat, bohater, warsztat, omdlenie), ładowanie / zapis, autozapis, audio, PWA.
+// Start gry: menu (nowy świat, bohater, warsztat, omdlenie, gra we dwoje), ładowanie / zapis, autozapis, audio, PWA.
 (function (BC) {
   var Boot = {};
   var overlay = document.getElementById('overlay');
@@ -25,7 +25,7 @@
     try { var s = localStorage.getItem(GAME_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; }
   }
   function save() {
-    if (!BC.Game.world) return;
+    if (!BC.Game.world || Boot.guest) return;   // gość nie nadpisuje swojego zapisu światem kolegi
     try {
       localStorage.setItem(SAVE_KEY, BC.Game.world.serialize());
       var st = BC.Player.getState();
@@ -42,7 +42,7 @@
     el.textContent = text || '';
   }
   function showPanel(id) {
-    ['menuMain', 'panelNew', 'panelHero', 'panelCraft', 'panelDeath'].forEach(function (p) { $(p).style.display = p === id ? 'flex' : 'none'; });
+    ['menuMain', 'panelNew', 'panelHero', 'panelCraft', 'panelDeath', 'panelNet'].forEach(function (p) { $(p).style.display = p === id ? 'flex' : 'none'; });
     overlay.style.display = 'flex';
     document.body.classList.add('menu');
   }
@@ -63,14 +63,15 @@
       setLoading('Szukam dobrego miejsca…');
       hideOverlay();
       setTimeout(function () {
-        var sp = world.findSpawn(0, 0);
+        var sp = game.spawn || world.findSpawn(0, 0);
         BC.Game.init(world, { mode: game.mode, time: game.time });
         BC.Game.preload(sp.x, sp.z, 2);
-        var spawn = { x: sp.x, y: world.surfaceY(Math.floor(sp.x), Math.floor(sp.z)) + 1.01, z: sp.z };
+        var spawn = game.spawn ? { x: sp.x, y: sp.y, z: sp.z } : { x: sp.x, y: world.surfaceY(Math.floor(sp.x), Math.floor(sp.z)) + 1.01, z: sp.z };
+        if (game.guest) { Boot.guest = true; BC.Monsters.puppet = true; }
         BC.HUD.init(BC.Game.atlas);
         var stats = S.makeStats();
         if (game.hp !== undefined) { stats.hp = game.hp; stats.food = game.food; }
-        BC.Player.init(BC.Game, spawn, { mode: game.mode || 'creative', hero: game.hero || 'bulbasaur', stats: stats, inv: game.inv || S.makeInv() });
+        BC.Player.init(BC.Game, spawn, { mode: game.mode || 'creative', hero: game.hero || 'bulbasaur', stats: stats, inv: game.inv || S.makeInv(), guest: !!game.guest });
         BC.Game.preload(BC.Player.body.pos.x, BC.Player.body.pos.z, 2);
         BC.HUD.setStats(stats, false);
         setInterval(function () { save(); }, 10000);
@@ -80,6 +81,7 @@
         BC.Player.setPaused(false);
         BC.Player.lockPointer();
         Boot.updateStatus();
+        BC.Net.setReady();
       }, 30);
       return;
     }
@@ -194,6 +196,79 @@
   Boot.syncAudioUi();
   setInterval(function () { try { localStorage.setItem('bc.prefs', JSON.stringify({ music: BC.Audio.musicOn, sfx: BC.Audio.sfxOn })); } catch (e) {} }, 3000);
 
+  // ---------- gra we dwoje ----------
+  var Net = BC.Net, NP = BC.NetProto;
+  function badge(state) {
+    var b = $('netBadge');
+    b.style.display = 'block';
+    b.textContent = state === 'two' ? '👫 Pokój ' + Net.code + ' · gracie we dwoje'
+      : state === 'guest' ? '👫 Grasz u kolegi · pokój ' + Net.code
+      : '👫 Pokój ' + Net.code + ' · czekam na kolegę';
+  }
+  Net.onStatus = badge;
+  function netPanel() {
+    var g = loadGame();
+    if (g && g.hero && !started) pick.hero = g.hero;
+    if (started) pick.hero = BC.Player.hero.id;
+    $('netErr').textContent = '';
+    $('btnEnter').style.display = 'none';
+    $('joinBox').style.display = Net.role === 'host' ? 'none' : 'flex';
+    $('rowHost').style.display = Net.role === 'host' ? 'none' : 'flex';
+    $('netCode').innerHTML = Net.role === 'host' ? 'Kod pokoju:<b>' + Net.code + '</b>Podaj go koledze.' : '';
+    showPanel('panelNet');
+    heroCards($('heroesNet'));
+  }
+  $('btnNet').addEventListener('click', netPanel);
+  $('btnBackNet').addEventListener('click', function () { showPanel('menuMain'); });
+  $('btnHost').addEventListener('click', function () {
+    $('netErr').textContent = '';
+    $('netCode').textContent = 'Tworzę pokój…';
+    $('btnHost').disabled = true;
+    Net.host(function (code) {
+      $('btnHost').disabled = false;
+      $('rowHost').style.display = 'none'; $('joinBox').style.display = 'none';
+      $('netCode').innerHTML = 'Kod pokoju:<b>' + code + '</b>Podaj go koledze. Możesz już grać — dołączy w każdej chwili.';
+      $('btnEnter').style.display = '';
+      $('btnEnter').onclick = function () {
+        if (started) { start(); return; }
+        var w = loadWorld();
+        if (w) { start(w, loadGame() || {}); return; }
+        start(new BC.World({ seed: Math.floor(Math.random() * 1e9) }), { mode: pick.mode, hero: pick.hero });
+      };
+    }, function (err) { $('btnHost').disabled = false; $('netCode').textContent = ''; $('netErr').textContent = err; });
+  });
+  $('btnJoin').addEventListener('click', function () {
+    var code = NP.normCode($('inCode').value);
+    if (!code) { $('netErr').textContent = 'Kod ma 4 znaki, np. KAT7.'; return; }
+    save();
+    try { sessionStorage.setItem('bc.join', JSON.stringify({ code: code, hero: pick.hero })); } catch (e) {}
+    location.reload();
+  });
+  $('inCode').addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') $('btnJoin').click(); });
+  // Po przeładowaniu z „Dołącz”: łączymy się i czekamy na stuknięcie (odblokowuje dźwięk i pełny ekran).
+  function joinFlow(j) {
+    pick.hero = j.hero || pick.hero;
+    netPanel();
+    $('rowHost').style.display = 'none'; $('joinBox').style.display = 'none';
+    $('netCode').textContent = 'Łączę z pokojem ' + j.code + '…';
+    Net.join(j.code, pick.hero, function (m) {
+      $('netCode').innerHTML = 'Połączono z pokojem<b>' + j.code + '</b>';
+      $('btnEnter').style.display = '';
+      $('btnBackNet').style.display = 'none';
+      $('btnEnter').onclick = function () {
+        $('btnEnter').onclick = null;
+        start(BC.World.deserialize(m.world), { mode: m.mode, time: m.time, hero: pick.hero, spawn: m.spawn, guest: true });
+        badge('guest');
+        $('btnHero').style.display = '';
+      };
+    }, function (err) {
+      $('netCode').textContent = '';
+      $('netErr').textContent = err;
+      $('rowHost').style.display = 'flex'; $('joinBox').style.display = 'flex';
+      $('inCode').value = j.code;
+    });
+  }
+
   // Stan początkowy menu
   var hasSave = !!localStorage.getItem(SAVE_KEY);
   $('btnPlay').textContent = hasSave ? 'Graj dalej' : 'Graj';
@@ -202,6 +277,9 @@
   $('btnCraft').style.display = 'none';
   if (BC.isTouch) document.body.classList.add('touch');
   showPanel('menuMain');
+  var joinReq = null;
+  try { joinReq = JSON.parse(sessionStorage.getItem('bc.join') || 'null'); sessionStorage.removeItem('bc.join'); } catch (e) {}
+  if (joinReq) joinFlow(joinReq);
   if ('serviceWorker' in navigator && location.protocol !== 'file:') { try { navigator.serviceWorker.register('sw.js').catch(function () {}); } catch (e) {} }
   BC.Boot = Boot;
 })(window.BC);
