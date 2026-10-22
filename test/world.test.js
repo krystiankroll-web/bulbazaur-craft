@@ -140,6 +140,6 @@ test('onChange woła się przy set; świat gościa z serialize ma te same bloki'
   w.set(3, 10, 4, B.BRICK);
   w.set(3, 10, 4, B.BRICK);
   assert.deepEqual(seen, [[3, 10, 4, B.BRICK]]);
-  const g = BC.World.deserialize(w.serialize());
+  const g = BC.World.deserialize(w.serialize()); g.ensureChunk(0, 0);
   assert.equal(g.get(3, 10, 4), B.BRICK);
 });

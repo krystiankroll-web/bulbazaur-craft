@@ -14,7 +14,7 @@
 - Maks. 2 graczy; trzeci dostaje `full`.
 - Kod pokoju: 4 znaki z `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`; id w brokerze `bulbazaurcraft-<kod małymi literami>`.
 - Gość **nigdy** nie zapisuje świata ani pozycji do `localStorage`.
-- Komunikaty po polsku, dla dziecka: „Czekam na kolegę… kod: KOT7”, „Kolega dołączył!”, „Kolega wyszedł”, „Nie ma pokoju o takim kodzie”, „Nie udało się połączyć — połączcie oba telefony z tym samym Wi‑Fi i spróbujcie jeszcze raz”.
+- Komunikaty po polsku, dla dziecka: „Czekam na kolegę… kod: KAT7”, „Kolega dołączył!”, „Kolega wyszedł”, „Nie ma pokoju o takim kodzie”, „Nie udało się połączyć — połączcie oba telefony z tym samym Wi‑Fi i spróbujcie jeszcze raz”.
 - `sw.js`: `CACHE = 'bc-v4c'`, nowe pliki w `FILES`.
 
 ## Protokół (obiekty `{ t: typ, … }`)
@@ -40,7 +40,7 @@
 
 **Files:** Create `src/netproto.js`, `test/netproto.test.js`; Modify `src/world.js` (`set`), `test/world.test.js`
 
-**Produces (`BC.NetProto`, dalej `P`):** `P.ALPHABET`, `P.makeCode(rand) → 'KOT7'`, `P.normCode(str) → kod | null`, `P.peerId(code)`, `P.TYPES` (kolejność `Object.keys(C.TYPES)`), `P.packCreatures(list) → [[id, typeIdx, x, y, z, yaw, flags, fuseT]]` (liczby zaokrąglone do 0,01; flags: 1 hurt, 2 burning, 4 shorn, 8 dead; fuseT −1 gdy brak), `P.unpackCreatures(arr) → [{id,type,x,y,z,yaw,hurt,burning,shorn,dead,fuseT}]`, `P.approach(cur, target, dt, rate)`, `P.approachAngle(cur, target, dt, rate)`; `World.prototype.onChange(x,y,z,id)` wołane w `set` po zapisaniu zmiany.
+**Produces (`BC.NetProto`, dalej `P`):** `P.ALPHABET`, `P.makeCode(rand) → 'KAT7'`, `P.normCode(str) → kod | null`, `P.peerId(code)`, `P.TYPES` (kolejność `Object.keys(C.TYPES)`), `P.packCreatures(list) → [[id, typeIdx, x, y, z, yaw, flags, fuseT]]` (liczby zaokrąglone do 0,01; flags: 1 hurt, 2 burning, 4 shorn, 8 dead; fuseT −1 gdy brak), `P.unpackCreatures(arr) → [{id,type,x,y,z,yaw,hurt,burning,shorn,dead,fuseT}]`, `P.approach(cur, target, dt, rate)`, `P.approachAngle(cur, target, dt, rate)`; `World.prototype.onChange(x,y,z,id)` wołane w `set` po zapisaniu zmiany.
 
 - [ ] **Step 1: testy**
 
@@ -55,10 +55,10 @@ test('kod pokoju: 4 znaki z bezpiecznego alfabetu, normalizacja wpisu', () => {
   const code = P.makeCode(() => seq[i++]);
   assert.equal(code.length, 4);
   for (const ch of code) assert.ok(P.ALPHABET.includes(ch));
-  assert.equal(P.normCode(' kot7 '), 'KOT7');
+  assert.equal(P.normCode(' kat7 '), 'KAT7');
   assert.equal(P.normCode('KO0'), null);
   assert.equal(P.normCode('OKO1'), null);
-  assert.equal(P.peerId('KOT7'), 'bulbazaurcraft-kot7');
+  assert.equal(P.peerId('KAT7'), 'bulbazaurcraft-kat7');
 });
 
 test('stworzenia: pakowanie i rozpakowanie', () => {
@@ -89,7 +89,7 @@ test('onChange woła się przy set; świat gościa z serialize ma te same bloki'
   w.set(3, 10, 4, B.BRICK);
   w.set(3, 10, 4, B.BRICK);
   assert.deepEqual(seen, [[3, 10, 4, B.BRICK]]);
-  const g = BC.World.deserialize(w.serialize());
+  const g = BC.World.deserialize(w.serialize()); g.ensureChunk(0, 0);
   assert.equal(g.get(3, 10, 4), B.BRICK);
 });
 ```
@@ -109,5 +109,5 @@ test('onChange woła się przy set; świat gościa z serialize ma te same bloki'
   - gospodarz: spawn wokół losowego gracza z listy; `attack`/kolec/wybuch na graczu nr 1 → `M.onRemote('hurt', { dmg, from })`; podniesienie przedmiotu przez gracza nr 1 → `M.onRemote('give', { item, why: 'pickup' })`; wybuch → `M.onRemote('fx', {...})`; przedmioty mają `id`.
 - [ ] **Step 3: `net.js`** — `host()`: `new Peer(P.peerId(kod))`, przy `unavailable-id` nowy kod; `connection` → gdy już jest gość: `full` i zamknij; `hello` → `welcome` + `Remote.create`. `join()`: `new Peer()` → `connect(P.peerId(kod), { reliable: true })`, 15 s limitu, błędy `peer-unavailable` / sieciowe → komunikaty z Global Constraints. `update(dt)`: `pos` 10/s, paczka `blocks` co 100 ms, gospodarz: `snap` 10/s, `time` co 2 s. Odbiór `blocks`: flaga `applying` (żeby `onChange` nie odbijał), `world.set` + `Game.rebuildChunks`. Gość po zerwaniu: komunikat i po 2,5 s `location.reload()`; gospodarz: „Kolega wyszedł”, `Remote.remove()`.
 - [ ] **Step 4: `player.js`** — gość: `Player.attack` → `Net.send({t:'hit'})` + dźwięk; `Player.pet` → serduszka lokalnie + `Net.send({t:'pet'})`; `BC.Net.onGive(item, why, name)` → do plecaka (Przetrwanie) + komunikat; `hurt` → `Player.hurt`; `killed` → `onMonsterKilled`.
-- [ ] **Step 5: `boot.js` + `index.html`** — przycisk „👫 Graj z kimś” w menu → panel: „Stwórz pokój” (pokazuje kod dużymi literami, start/wznowienie gry), pole kodu + „Dołącz” + karty bohaterów; `sessionStorage['bc.join']` + `location.reload()`; przy starcie strony z `bc.join` → „Łączę z pokojem…” → `welcome` → `start(World.deserialize(world), { mode, time, hero, spawn, guest: true })`; `save()` nic nie robi u gościa; odznaka `#netBadge` u góry: „👫 KOT7 · czekam” / „👫 KOT7 · 2 graczy”. Menu: „2× szybko = latanie” bez „(kreatywny)”, opis Przetrwania „W nocy przychodzą potwory”.
+- [ ] **Step 5: `boot.js` + `index.html`** — przycisk „👫 Graj z kimś” w menu → panel: „Stwórz pokój” (pokazuje kod dużymi literami, start/wznowienie gry), pole kodu + „Dołącz” + karty bohaterów; `sessionStorage['bc.join']` + `location.reload()`; przy starcie strony z `bc.join` → „Łączę z pokojem…” → `welcome` → `start(World.deserialize(world), { mode, time, hero, spawn, guest: true })`; `save()` nic nie robi u gościa; odznaka `#netBadge` u góry: „👫 KAT7 · czekam” / „👫 KAT7 · 2 graczy”. Menu: „2× szybko = latanie” bez „(kreatywny)”, opis Przetrwania „W nocy przychodzą potwory”.
 - [ ] **Step 6:** testy Node + **e2e** w headless Chrome: dwie karty tej samej przeglądarki; karta A „Stwórz pokój” → kod; karta B dołącza; sprawdzenia: B ma ten sam `seed`, A widzi model kolegi, blok postawiony w B pojawia się w A i odwrotnie, krowa od gospodarza widoczna u gościa, głaskanie u gościa daje mleko, zamknięcie B → A „Kolega wyszedł”. Commit `feat: two-player mode with room code`, `git push`.

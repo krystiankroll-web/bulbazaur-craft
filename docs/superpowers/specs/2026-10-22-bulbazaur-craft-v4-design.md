@@ -62,10 +62,10 @@ Wybuch zmienia świat przez `world.set` (zapisuje się w diffach jak kopanie gra
 
 ### Jak to wygląda dla dziecka
 Menu → **„👫 Graj z kimś”** → dwa przyciski:
-- **Stwórz pokój** — startuje obecny świat (lub nowy) i pokazuje duży kod z 4 znaków (np. `KOT7`; alfabet bez mylących znaków `0/O/1/I`).
+- **Stwórz pokój** — startuje obecny świat (lub nowy) i pokazuje duży kod z 4 znaków (np. `KAT7`; alfabet bez mylących znaków `0/O/1/I`).
 - **Dołącz** — pole na kod + przycisk „Dołącz”. Po połączeniu gość wybiera bohatera (jak dziś) i ląduje obok gospodarza.
 
-Komunikaty: „Czekam na kolegę… kod: KOT7”, „Kolega dołączył!”, „Kolega wyszedł”, „Nie udało się połączyć — połączcie oba telefony z tym samym Wi‑Fi i spróbujcie jeszcze raz”.
+Komunikaty: „Czekam na kolegę… kod: KAT7”, „Kolega dołączył!”, „Kolega wyszedł”, „Nie udało się połączyć — połączcie oba telefony z tym samym Wi‑Fi i spróbujcie jeszcze raz”.
 
 ### Technika
 - **PeerJS** (WebRTC, kanał danych) wgrany do repo jako `vendor/peerjs.min.js` (przypięta wersja), dodany do cache service workera. Sygnalizacja przez darmowy publiczny broker PeerJS — bez serwera, bez kont.

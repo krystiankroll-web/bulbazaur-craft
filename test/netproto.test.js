@@ -8,10 +8,10 @@ test('kod pokoju: 4 znaki z bezpiecznego alfabetu, normalizacja wpisu', () => {
   const code = P.makeCode(() => seq[i++]);
   assert.equal(code.length, 4);
   for (const ch of code) assert.ok(P.ALPHABET.includes(ch));
-  assert.equal(P.normCode(' kot7 '), 'KOT7');
+  assert.equal(P.normCode(' kat7 '), 'KAT7');
   assert.equal(P.normCode('KO0'), null);
   assert.equal(P.normCode('OKO1'), null);
-  assert.equal(P.peerId('KOT7'), 'bulbazaurcraft-kot7');
+  assert.equal(P.peerId('KAT7'), 'bulbazaurcraft-kat7');
 });
 
 test('stworzenia: pakowanie i rozpakowanie', () => {
