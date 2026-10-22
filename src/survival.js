@@ -16,12 +16,12 @@ if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
   S.makeStats = function () {
     return { hp: S.MAX_HP, food: S.MAX_FOOD, air: S.MAX_AIR, hungerAcc: 0, regenAcc: 0, starveAcc: 0, drownAcc: 0, hurtT: 0 };
   };
-  // ctx: { underwater, sprinting, noDrown }. Zwraca listę zdarzeń: 'regen' | 'starve' | 'drown'.
+  // ctx: { underwater, sprinting, flying, noDrown }. Zwraca listę zdarzeń: 'regen' | 'starve' | 'drown'.
   S.tickStats = function (st, dt, ctx) {
     ctx = ctx || {};
     var ev = [];
     st.hurtT = Math.max(0, st.hurtT - dt);
-    st.hungerAcc += dt * (ctx.sprinting ? 2 : 1);
+    st.hungerAcc += dt * ((ctx.sprinting || ctx.flying) ? 2 : 1);
     while (st.hungerAcc >= S.HUNGER_SECONDS) { st.hungerAcc -= S.HUNGER_SECONDS; st.food = Math.max(0, st.food - 1); }
     if (st.food >= 14 && st.hp < S.MAX_HP) {
       st.regenAcc += dt;
@@ -47,6 +47,7 @@ if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
   };
   S.fallDamage = function (dist) { return dist > 5.5 ? Math.floor(dist - 5) : 0; };
   S.jumpCost = function (st) { st.hungerAcc += 2; };
+  S.canFly = function (st, mode) { return mode !== 'survival' || st.food > 0; };
   S.eat = function (st, inv) {
     if (st.food >= S.MAX_FOOD) return false;
     if (!S.invTake(inv, B.APPLE, 1)) return false;

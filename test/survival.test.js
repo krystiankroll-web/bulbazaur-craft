@@ -139,3 +139,17 @@ test('promień trafia potwora', () => {
   assert.equal(S.rayHitsMonster(m, { x: 0, y: 1, z: 0 }, { x: 0, y: 0, z: 1 }, 10), null);
   assert.equal(S.rayHitsMonster(m, { x: 0, y: 1, z: 0 }, { x: 1, y: 0, z: 0 }, 3), null);
 });
+
+test('lot: głód ×2, w przetrwaniu tylko przy jedzeniu > 0', () => {
+  const st = S.makeStats();
+  S.tickStats(st, 20, { flying: true });
+  assert.equal(st.food, 19);
+  const st2 = S.makeStats();
+  S.tickStats(st2, 20, { flying: true, sprinting: true });
+  assert.equal(st2.food, 19);
+  assert.equal(S.canFly(st, 'creative'), true);
+  assert.equal(S.canFly(st, 'survival'), true);
+  st.food = 0;
+  assert.equal(S.canFly(st, 'survival'), false);
+  assert.equal(S.canFly(st, 'creative'), true);
+});
