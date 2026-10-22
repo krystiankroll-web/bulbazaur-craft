@@ -24,3 +24,10 @@ test('hotbar ma 3 strony po 9 slotów z placeable blokami', () => {
     for (const id of page) assert.equal(BC.BlockInfo[id].placeable, true);
   }
 });
+
+test('mleko i jajko to przedmioty, nie bloki do stawiania', () => {
+  for (const id of [BC.Blocks.MILK, BC.Blocks.EGG]) {
+    assert.equal(BC.BlockInfo[id].item, true);
+    assert.equal(BC.BlockInfo[id].placeable, false);
+  }
+});

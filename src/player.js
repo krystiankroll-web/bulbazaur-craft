@@ -492,11 +492,12 @@
   Player.eat = function () {
     if (Player.mode !== 'survival') { BC.HUD.message('Jedzenie jest tylko w przetrwaniu', 900); return; }
     if (Player.stats.food >= S.MAX_FOOD) { BC.HUD.message('Nie jesteś głodny', 800); return; }
-    if (!S.eat(Player.stats, Player.inv)) { BC.HUD.message('Nie masz jabłek. Szukaj w liściach!', 1200); BC.Audio.sfx('nope'); return; }
+    var ate = S.eat(Player.stats, Player.inv);
+    if (!ate) { BC.HUD.message('Nie masz jedzenia. Szukaj jabłek w liściach!', 1200); BC.Audio.sfx('nope'); return; }
     BC.Audio.sfx('eat');
     BC.HUD.setInv(Player.inv, Player.mode);
     BC.HUD.setStats(Player.stats, false);
-    BC.HUD.message('Mniam!', 700);
+    BC.HUD.message('Mniam! (' + Info[ate].name + ')', 900);
   };
   Player.hurt = function (n, from) {
     if (Player.mode !== 'survival' || Player.paused) return;

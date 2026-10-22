@@ -62,7 +62,10 @@
       s.classList.toggle('empty', surv && n === 0);
     });
     var apples = document.getElementById('apples');
-    if (apples) apples.textContent = surv ? '🍎 ' + (HUD.inv[B.APPLE] || 0) : '';
+    if (apples) {
+      var milk = surv ? HUD.inv[B.MILK] || 0 : 0, egg = surv ? HUD.inv[B.EGG] || 0 : 0;
+      apples.textContent = surv ? '🍎 ' + (HUD.inv[B.APPLE] || 0) + (milk ? '  🥛 ' + milk : '') + (egg ? '  🥚 ' + egg : '') : '';
+    }
   };
   HUD.setHero = function (hero) {
     var c = document.getElementById('portrait');

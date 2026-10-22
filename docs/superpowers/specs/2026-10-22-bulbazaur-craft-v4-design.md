@@ -32,7 +32,7 @@ Trzy etapy w tej kolejności. Każdy kończy się `git push` (strona na telefoni
 - Spawn: na trawie, w grupkach 2–4, 24–40 kratek od gracza. Limit: 10 (telefon 6). Despawn > 64 kratek. Nocą nie dochodzą nowe, istniejące zostają.
 - Chodzą losowo, omijają wodę i krawędzie > 2 kratek. Są **nietykalne**: ataki i moce bohaterów ich nie ranią; potwory je ignorują.
 - **Głaskanie:** stuknięcie / LPM na zwierzątku → serduszka (cząsteczki) + dźwięk. Stuknięcie ma pierwszeństwo przed kopaniem bloku za zwierzątkiem.
-- **Jabłko w ręce** (wybrany slot = jabłko): zwierzątka w promieniu 8 idą za graczem.
+- **Po pogłaskaniu** zwierzątko idzie za tym graczem przez 20 s (jabłko nie jest na pasku bloków, więc „jabłko w ręce” odpada; ta reguła działa w obu trybach i we dwoje).
 - 🐄 **Krowa** — głaskanie daje **Mleko** (co 60 s na krowę).
 - 🐑 **Owca** — głaskanie daje **Wełnę białą** (`WOOL_WHITE`, istniejący blok); owca łysa przez 120 s (inny model), wtedy nic nie daje.
 - 🐔 **Kurczak** — co 90–150 s sam znosi **Jajko** (przedmiot leży na ziemi i wpada do plecaka po podejściu ≤ 1,5 kratki; znika po 5 min).
@@ -56,7 +56,7 @@ Wspólne: spawn jak dziś (16–32 kratki, nie przy pochodni), płoną o świcie
 Wybuch zmienia świat przez `world.set` (zapisuje się w diffach jak kopanie gracza), bloki nie wpadają do plecaka.
 
 ### Testy
-`creatures.test.js`: ruch i atak Cieniaka (przeniesione), skok Skoczka i podział, dystans i strzał Kolczaka, odliczanie i przerwanie Wybuchacza, lista bloków wybuchu (bez skały macierzystej), zwierzątka idą do gracza z jabłkiem, owca łysieje i odrasta, `S.eat` z trzema rodzajami jedzenia.
+`creatures.test.js`: ruch i atak Cieniaka (przeniesione), skok Skoczka i podział, dystans i strzał Kolczaka, odliczanie i przerwanie Wybuchacza, lista bloków wybuchu (bez skały macierzystej), pogłaskane zwierzątko idzie za graczem, owca łysieje i odrasta, `S.eat` z trzema rodzajami jedzenia.
 
 ## Etap 3 — dwóch graczy
 

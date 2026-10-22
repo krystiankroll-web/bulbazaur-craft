@@ -7,7 +7,7 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
     WOOL_RED: 13, WOOL_ORANGE: 14, WOOL_YELLOW: 15, WOOL_GREEN: 16,
     WOOL_BLUE: 17, WOOL_PURPLE: 18, WOOL_PINK: 19, WOOL_WHITE: 20,
     SNOW: 21, CACTUS: 22, BRICK: 23, COBBLE: 24, GRAVEL: 25, TULIP: 26,
-    TORCH: 27, APPLE: 28
+    TORCH: 27, APPLE: 28, MILK: 29, EGG: 30
   };
 
   // Indeksy kafli w atlasie (zob. textures.js)
@@ -17,7 +17,7 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
     WOOL_RED: 14, WOOL_ORANGE: 15, WOOL_YELLOW: 16, WOOL_GREEN: 17,
     WOOL_BLUE: 18, WOOL_PURPLE: 19, WOOL_PINK: 20, WOOL_WHITE: 21,
     SNOW_TOP: 22, SNOW_SIDE: 23, CACTUS_SIDE: 24, CACTUS_TOP: 25, BRICK: 26, COBBLE: 27, GRAVEL: 28, TULIP: 29,
-    TORCH: 30, APPLE: 31
+    TORCH: 30, APPLE: 31, MILK: 32, EGG: 33
   };
 
   function def(name, opts) {
@@ -67,6 +67,8 @@ var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (glob
   BlockInfo[Blocks.TULIP] = def('Tulipan', { solid: false, transparent: true, cross: true, burnable: true, tex: uni(T.TULIP) });
   BlockInfo[Blocks.TORCH] = def('Pochodnia', { solid: false, transparent: true, cross: true, light: true, tex: uni(T.TORCH) });
   BlockInfo[Blocks.APPLE] = def('Jabłko', { solid: false, transparent: true, placeable: false, item: true, drop: null, tex: uni(T.APPLE) });
+  BlockInfo[Blocks.MILK] = def('Mleko', { solid: false, transparent: true, placeable: false, item: true, drop: null, tex: uni(T.MILK) });
+  BlockInfo[Blocks.EGG] = def('Jajko', { solid: false, transparent: true, placeable: false, item: true, drop: null, tex: uni(T.EGG) });
   [Blocks.WOOL_RED, Blocks.WOOL_ORANGE, Blocks.WOOL_YELLOW, Blocks.WOOL_GREEN, Blocks.WOOL_BLUE, Blocks.WOOL_PURPLE, Blocks.WOOL_PINK, Blocks.WOOL_WHITE]
     .forEach(function (id) { BlockInfo[id].burnable = true; });
 

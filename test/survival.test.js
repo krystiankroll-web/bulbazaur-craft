@@ -65,7 +65,7 @@ test('ekwipunek: dodawanie, zdejmowanie, jedzenie jabłek', () => {
   assert.equal(S.invTake(inv, B.DIRT, 2), true);
   assert.equal(S.invCount(inv, B.DIRT), 0);
   const st = S.makeStats(); st.food = 10;
-  assert.equal(S.eat(st, inv), true);
+  assert.equal(S.eat(st, inv), B.APPLE);
   assert.equal(st.food, 16);
   assert.equal(S.invCount(inv, B.APPLE), 2);
   st.food = 20;
@@ -152,4 +152,17 @@ test('lot: głód ×2, w przetrwaniu tylko przy jedzeniu > 0', () => {
   st.food = 0;
   assert.equal(S.canFly(st, 'survival'), false);
   assert.equal(S.canFly(st, 'creative'), true);
+});
+
+test('jedzenie: jabłko 6, mleko 4, jajko 3; je to, czego najwięcej', () => {
+  const inv = {}; S.invAdd(inv, B.EGG, 2); S.invAdd(inv, B.MILK, 1);
+  const st = S.makeStats(); st.food = 5;
+  assert.equal(S.eat(st, inv), B.EGG);
+  assert.equal(st.food, 8);
+  assert.equal(S.eat(st, inv), B.MILK);   // remis 1:1 → kolejność S.FOODS
+  assert.equal(st.food, 12);
+  assert.equal(S.hasFood(inv), true);
+  assert.equal(S.eat(st, inv), B.EGG);
+  assert.equal(S.hasFood(inv), false);
+  assert.equal(S.eat(st, inv), false);
 });

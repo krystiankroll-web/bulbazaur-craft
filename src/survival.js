@@ -48,11 +48,18 @@ if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
   S.fallDamage = function (dist) { return dist > 5.5 ? Math.floor(dist - 5) : 0; };
   S.jumpCost = function (st) { st.hungerAcc += 2; };
   S.canFly = function (st, mode) { return mode !== 'survival' || st.food > 0; };
+  // Jedzenie: [id, ile punktów]. Kolejność rozstrzyga remis.
+  S.FOODS = [[B.APPLE, S.APPLE_FOOD], [B.MILK, 4], [B.EGG, 3]];
+  S.hasFood = function (inv) { return S.FOODS.some(function (f) { return (inv[f[0]] || 0) > 0; }); };
+  // Zjada to, czego jest najwięcej. Zwraca id zjedzonego albo false.
   S.eat = function (st, inv) {
     if (st.food >= S.MAX_FOOD) return false;
-    if (!S.invTake(inv, B.APPLE, 1)) return false;
-    st.food = Math.min(S.MAX_FOOD, st.food + S.APPLE_FOOD);
-    return true;
+    var best = null;
+    S.FOODS.forEach(function (f) { var n = inv[f[0]] || 0; if (n > 0 && (!best || n > (inv[best[0]] || 0))) best = f; });
+    if (!best) return false;
+    S.invTake(inv, best[0], 1);
+    st.food = Math.min(S.MAX_FOOD, st.food + best[1]);
+    return best[0];
   };
   S.respawn = function (st) { st.hp = S.MAX_HP; st.food = Math.max(st.food, 14); st.air = S.MAX_AIR; st.hurtT = 0; };
 
