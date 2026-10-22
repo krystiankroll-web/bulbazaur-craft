@@ -54,6 +54,7 @@ if (typeof require !== 'undefined' && !BC.Blocks) { require('./blocks.js'); requ
     if (this.get(x, y, z) === id) return [];
     this._raw(x, y, z, id);
     this.diffs[x + ',' + y + ',' + z] = id;
+    if (this.onChange) this.onChange(x, y, z, id);   // np. gra we dwoje wysyła zmianę koledze
     var keys = [this.chunkKey(cx, cz)];
     var lx = x & 15, lz = z & 15;
     if (lx === 0) keys.push(this.chunkKey(cx - 1, cz));

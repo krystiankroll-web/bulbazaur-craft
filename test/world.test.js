@@ -133,3 +133,13 @@ test('findSpawn zwraca miejsce nad wodą', () => {
   const w = gen(5); const s = w.findSpawn(0, 0);
   assert.ok(w.terrainHeight(Math.floor(s.x), Math.floor(s.z)) > w.waterLevel);
 });
+
+test('onChange woła się przy set; świat gościa z serialize ma te same bloki', () => {
+  const w = empty(); const seen = [];
+  w.onChange = (x, y, z, id) => seen.push([x, y, z, id]);
+  w.set(3, 10, 4, B.BRICK);
+  w.set(3, 10, 4, B.BRICK);
+  assert.deepEqual(seen, [[3, 10, 4, B.BRICK]]);
+  const g = BC.World.deserialize(w.serialize());
+  assert.equal(g.get(3, 10, 4), B.BRICK);
+});

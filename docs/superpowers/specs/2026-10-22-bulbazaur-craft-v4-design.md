@@ -70,7 +70,10 @@ Komunikaty: „Czekam na kolegę… kod: KOT7”, „Kolega dołączył!”, „
 ### Technika
 - **PeerJS** (WebRTC, kanał danych) wgrany do repo jako `vendor/peerjs.min.js` (przypięta wersja), dodany do cache service workera. Sygnalizacja przez darmowy publiczny broker PeerJS — bez serwera, bez kont.
 - Identyfikator gospodarza: `bulbazaurcraft-<KOD>`. Maksymalnie 2 graczy (gospodarz odrzuca trzeciego komunikatem „Pokój pełny”).
-- **`src/net.js` (nowy):** połączenie (`host()`, `join(code)`, `send(msg)`, zdarzenia `onMessage/onOpen/onClose`) + **czysty protokół** testowalny w Node: `encode/decode`, `applyBlockEdit`, `interpolate(snapA, snapB, t)`.
+- **`src/netproto.js` (nowy, czysty, Node):** generator kodu, id pokoju, pakowanie/rozpakowanie stanu stworzeń, wygładzanie ruchu.
+- **`src/net.js` (nowy):** połączenie PeerJS (`host()`, `join(code)`, `send(msg)`) i obsługa wiadomości w grze.
+- **Bloki są symetryczne:** każdy gracz zmienia blok u siebie od razu i wysyła zmianę drugiemu (`World.onChange` łapie każdą zmianę — kopanie, stawianie, moce, drzewa, wybuchy). Przy 2 graczach konflikty są pomijalne, a gość nie ma opóźnienia.
+- **Dołączanie przez przeładowanie:** „Dołącz” zapisuje kod w `sessionStorage` i przeładowuje stronę; gość nie zapisuje świata, więc jego własny zapis zostaje nietknięty.
 - **`src/remote.js` (nowy):** model drugiego gracza (model bohatera z `heroes.js` + podpis z nazwą Pokémona nad głową), interpolacja pozycji.
 
 ### Kto o czym decyduje (gospodarz rządzi)
@@ -78,7 +81,7 @@ Komunikaty: „Czekam na kolegę… kod: KOT7”, „Kolega dołączył!”, „
 |---|---|---|
 | `hello {hero}` / `welcome {seed, height, diffs, time, mode, spawn}` | gość → gospodarz → gość | raz |
 | `pos {x,y,z,yaw,pitch,hero,anim}` | oba kierunki | 10×/s |
-| `edit {x,y,z,id}` (prośba gościa) → `block {x,y,z,id}` (rozesłanie) | gość → gospodarz → oba | przy zmianie |
+| `blocks [[x,y,z,id],…]` | oba kierunki | paczka co 100 ms, gdy są zmiany |
 | `creatures [{id,type,x,y,z,yaw,state}]` | gospodarz → gość | 10×/s |
 | `hit {creatureId, dmg}` / `pet {creatureId}` | gość → gospodarz | przy akcji |
 | `hurt {dmg, from}` / `give {itemId, n}` | gospodarz → gość | przy zdarzeniu |
@@ -86,7 +89,7 @@ Komunikaty: „Czekam na kolegę… kod: KOT7”, „Kolega dołączył!”, „
 
 - Gospodarz symuluje **wszystkie** stworzenia; spawn i AI biorą pod uwagę obu graczy (potwór goni najbliższego). Gość tylko rysuje stworzenia z interpolacją.
 - Każdy ma własne serca, głód i plecak (u siebie). Gość nie zapisuje świata; gospodarz zapisuje jak dziś.
-- Moce bohaterów gościa zmieniające świat (płomień, woda, pnącza) idą tą samą ścieżką `edit`.
+- Moce bohaterów zmieniające świat (płomień, woda, pnącza) idą tą samą ścieżką `blocks`.
 - Gość dociąga chunki sam z ziarna + diffów — przesyłane są tylko zmiany, nie mapa.
 - Zerwanie połączenia: gość → komunikat i powrót do menu; gospodarz → „Kolega wyszedł”, gra dalej sam, pokój nadal czeka na ponowne dołączenie z tym samym kodem.
 
@@ -95,7 +98,7 @@ Komunikaty: „Czekam na kolegę… kod: KOT7”, „Kolega dołączył!”, „
 - Publiczny broker PeerJS może być chwilowo niedostępny — komunikat „spróbuj za chwilę”.
 
 ### Testy
-`net.test.js`: kodowanie/dekodowanie wiadomości, generator kodu (4 znaki z bezpiecznego alfabetu), zastosowanie `welcome` (świat gościa = świat gospodarza po diffach), `applyBlockEdit` odrzuca skałę macierzystą, interpolacja. Test end‑to‑end: dwie karty headless Chrome na Macu łączą się przez broker, gość stawia blok → gospodarz go widzi.
+`netproto.test.js`: generator kodu (4 znaki z bezpiecznego alfabetu), pakowanie i rozpakowanie stworzeń, wygładzanie; `world.test.js`: `onChange` woła się przy `set`, świat gościa z `serialize()` gospodarza ma te same bloki. Test end‑to‑end: dwie karty headless Chrome na Macu łączą się przez broker, gość stawia blok → gospodarz go widzi.
 
 ## Poza zakresem
 Rozmnażanie zwierząt, jazda na zwierzętach, oswajanie, więcej niż 2 graczy, własny serwer/TURN, czat tekstowy, zapis świata u gościa.
