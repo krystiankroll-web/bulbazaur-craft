@@ -1,4 +1,4 @@
-// Stworzenia (czysta logika, testowalna w Node): typy, ruch, AI potworów i zwierzątek.
+// Stworzenia (czysta logika, testowalna w Node): typy, ruch, AI potworów i zwierzątek, głaskanie, kolce, wybuch.
 // AI dostaje listę graczy (ctx.players = [{x,y,z}], pozycja stóp), żeby działało też we dwoje.
 var BC = (typeof window !== "undefined") ? (window.BC = window.BC || {}) : (global.BC = global.BC || {});
 if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
@@ -11,8 +11,14 @@ if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
     skoczek: { hostile: true, name: 'Skoczek', hp: 8, w: 0.9, h: 0.9, speed: 4.5, dmg: 2, sight: 20, reach: 1.4, weight: 25, hop: 1.0, split: 'skoczek_maly' },
     skoczek_maly: { hostile: true, name: 'Mały Skoczek', hp: 2, w: 0.5, h: 0.5, speed: 5, dmg: 1, sight: 20, reach: 1.1, weight: 0, hop: 0.7 },
     kolczak: { hostile: true, name: 'Kolczak', hp: 6, w: 0.7, h: 1.2, speed: 2.6, dmg: 2, sight: 24, reach: 0, weight: 20, shootEvery: 2.5, keepMin: 8, keepMax: 14 },
-    wybuchacz: { hostile: true, name: 'Wybuchacz', hp: 5, w: 0.6, h: 1.5, speed: 3.0, dmg: 7, sight: 24, reach: 0, weight: 15, fuse: 1.5, fuseStart: 2, fuseCancel: 4, blast: 2.5 }
+    wybuchacz: { hostile: true, name: 'Wybuchacz', hp: 5, w: 0.6, h: 1.5, speed: 3.0, dmg: 7, sight: 24, reach: 0, weight: 15, fuse: 1.5, fuseStart: 2, fuseCancel: 4, blast: 2.5 },
+    krowa: { hostile: false, name: 'Krowa', hp: 10, w: 0.9, h: 1.3, speed: 1.3, product: B.MILK, productCd: 60 },
+    owca: { hostile: false, name: 'Owca', hp: 8, w: 0.9, h: 1.2, speed: 1.3, product: B.WOOL_WHITE, shear: 120 },
+    kurczak: { hostile: false, name: 'Kurczak', hp: 4, w: 0.4, h: 0.7, speed: 1.5, lay: B.EGG, layMin: 90, layMax: 150 },
+    swinka: { hostile: false, name: 'Świnka', hp: 10, w: 0.8, h: 0.9, speed: 1.3, lay: B.APPLE, layMin: 120, layMax: 240 }
   };
+  C.ANIMALS = ['krowa', 'owca', 'kurczak', 'swinka'];
+  C.FOLLOW_SECONDS = 20;
 
   C.make = function (type, x, y, z, rand) {
     rand = rand || Math.random;
@@ -23,6 +29,8 @@ if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
     if (T.hop) c.hopCd = T.hop;
     if (T.shootEvery) c.shootCd = T.shootEvery;
     if (T.fuse) c.fuseT = null;
+    if (!T.hostile) { c.wanderT = 0; c.moving = false; c.followT = 0; c.follow = null; c.productCd = 0; c.shornT = 0; }
+    if (T.lay) c.layT = T.layMin + rand() * (T.layMax - T.layMin);
     return c;
   };
 
@@ -102,12 +110,63 @@ if (typeof require !== 'undefined' && !BC.Physics) { require('./physics.js'); }
     }
   }
 
+  // Czy w (x, y, z) zwierzątko może stanąć: bez wody i bez spadku większego niż 2 kratki.
+  C.safeAhead = function (world, x, y, z) {
+    var fx = Math.floor(x), fy = Math.floor(y), fz = Math.floor(z);
+    for (var yy = fy; yy >= fy - 3; yy--) {
+      var id = world.get(fx, yy, fz);
+      if (id === B.WATER) return false;
+      if (BC.BlockInfo[id].solid) return true;
+    }
+    return false;
+  };
+
+  function animalStep(c, T, world, ctx, dt, ev) {
+    var b = c.body, rand = ctx.rand || Math.random, wx = 0, wz = 0;
+    c.productCd = Math.max(0, c.productCd - dt);
+    c.shornT = Math.max(0, c.shornT - dt);
+    c.followT = Math.max(0, c.followT - dt);
+    var p = c.followT > 0 && c.follow !== null ? ctx.players[c.follow] : null;
+    if (p) {
+      var dx = p.x - b.pos.x, dz = p.z - b.pos.z, d = Math.hypot(dx, dz);
+      if (d > 2 && d < 24) { wx = dx / d * T.speed * 1.6; wz = dz / d * T.speed * 1.6; }
+    } else {
+      c.wanderT -= dt;
+      if (c.wanderT <= 0) { c.wanderT = 2 + rand() * 3; c.moving = rand() < 0.6; c.yaw = rand() * Math.PI * 2; }
+      if (c.moving) {
+        wx = Math.sin(c.yaw) * T.speed; wz = Math.cos(c.yaw) * T.speed;
+        if (!C.safeAhead(world, b.pos.x + Math.sin(c.yaw) * 0.9, b.pos.y, b.pos.z + Math.cos(c.yaw) * 0.9)) { wx = 0; wz = 0; c.moving = false; }
+      }
+    }
+    if (wx || wz) c.yaw = Math.atan2(wx, wz);
+    walk(c, world, wx, wz, dt);
+    if (T.lay) {
+      c.layT -= dt;
+      if (c.layT <= 0) {
+        c.layT = T.layMin + rand() * (T.layMax - T.layMin);
+        ev.push({ type: 'lay', item: T.lay, x: b.pos.x, y: b.pos.y + 0.2, z: b.pos.z });
+      }
+    }
+  }
+
+  // Głaskanie zwierzątka przez gracza nr `who`: idzie za nim i czasem coś daje. Zwraca id przedmiotu albo null.
+  C.pet = function (c, who) {
+    var T = C.TYPES[c.type];
+    if (T.hostile) return null;
+    c.followT = C.FOLLOW_SECONDS; c.follow = who;
+    if (T.product === undefined) return null;
+    if (T.shear) { if (c.shornT > 0) return null; c.shornT = T.shear; return T.product; }
+    if (c.productCd > 0) return null;
+    c.productCd = T.productCd;
+    return T.product;
+  };
+
   // Krok AI i fizyki. Zwraca listę zdarzeń.
   C.step = function (c, world, ctx, dt) {
     var T = C.TYPES[c.type], ev = [];
     c.hurtT = Math.max(0, c.hurtT - dt);
     if (c.dead) return ev;
-    hostileStep(c, T, world, ctx, dt, ev);
+    if (T.hostile) hostileStep(c, T, world, ctx, dt, ev); else animalStep(c, T, world, ctx, dt, ev);
     return ev;
   };
 

@@ -270,7 +270,6 @@ test('zwierzątko nie wchodzi do wody ani nad przepaść', () => {
   w.set(5, 1, 0, B.AIR);
   assert.equal(C.safeAhead(w, 2.5, 2, 0.5), true);
   assert.equal(C.safeAhead(w, 4.5, 2, 0.5), false);
-  assert.equal(C.safeAhead(w, 5.5, 2, 0.5), true);   // dziura 1 kratka: y=0 skała → spadek 1
   assert.equal(C.safeAhead(w, 5.5, 6, 0.5), false);  // 4+ w dół → za głęboko
 });
 ```

@@ -113,3 +113,49 @@ test('wybuch: bloki w kuli bez skały macierzystej i wody; obrażenia maleją z 
   assert.ok(!list.some(([x, y, z]) => x === 0 && y === 3 && z === 0));
   assert.equal(C.blastDamage(0), 7); assert.equal(C.blastDamage(2), 3); assert.equal(C.blastDamage(4), 0);
 });
+
+test('krowa daje mleko co 60 s, owca wełnę i łysieje na 120 s', () => {
+  const w = flat();
+  const k = C.make('krowa', 0.5, 2, 0.5);
+  assert.equal(C.pet(k, 0), B.MILK);
+  assert.equal(C.pet(k, 0), null);
+  for (let i = 0; i < 61; i++) C.step(k, w, one({ x: 0.5, y: 2, z: 0.5 }), 1);
+  assert.equal(C.pet(k, 0), B.MILK);
+  const o = C.make('owca', 0.5, 2, 0.5);
+  assert.equal(C.pet(o, 0), B.WOOL_WHITE);
+  assert.ok(o.shornT > 0);
+  assert.equal(C.pet(o, 0), null);
+  for (let i = 0; i < 121; i++) C.step(o, w, one({ x: 0.5, y: 2, z: 0.5 }), 1);
+  assert.equal(o.shornT, 0);
+  assert.equal(C.pet(C.make('swinka', 0, 2, 0), 0), null);
+});
+
+test('pogłaskane zwierzątko idzie za graczem 20 s, potem przestaje', () => {
+  const w = flat();
+  const s = C.make('swinka', 0.5, 2, 0.5);
+  C.pet(s, 1);
+  const ctx = { players: [{ x: -9, y: 2, z: 0.5 }, { x: 9.5, y: 2, z: 0.5 }], rand: () => 0.5 };
+  for (let i = 0; i < 300; i++) C.step(s, w, ctx, 1 / 60);
+  assert.ok(s.body.pos.x > 3, 'idzie do gracza nr 1');
+  for (let i = 0; i < 20 * 60; i++) C.step(s, w, ctx, 1 / 60);
+  assert.equal(s.followT, 0);
+});
+
+test('kurczak znosi jajko, zwierzątka nie da się zranić', () => {
+  const w = flat();
+  const k = C.make('kurczak', 0.5, 2, 0.5); k.layT = 0.01;
+  const ev = C.step(k, w, one({ x: 9, y: 2, z: 9 }), 1 / 60);
+  assert.equal(ev.find(e => e.type === 'lay').item, B.EGG);
+  assert.ok(k.layT >= 90 && k.layT <= 150);
+  assert.equal(C.hit(k, 99), false); assert.equal(k.dead, false);
+});
+
+test('zwierzątko nie wchodzi do wody ani nad przepaść', () => {
+  const w = flat();
+  w.set(4, 1, 0, B.WATER);
+  w.set(5, 1, 0, B.AIR);
+  assert.equal(C.safeAhead(w, 2.5, 2, 0.5), true);
+  assert.equal(C.safeAhead(w, 4.5, 2, 0.5), false);
+  assert.equal(C.safeAhead(w, 6.5, 3, 0.5), true);   // spadek o 1 kratkę na podłogę y=1
+  assert.equal(C.safeAhead(w, 6.5, 6, 0.5), false);  // podłoga 4 kratki niżej → za głęboko
+});
