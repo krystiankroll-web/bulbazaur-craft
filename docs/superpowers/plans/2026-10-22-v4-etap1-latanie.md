@@ -86,7 +86,7 @@ test('lot: głód ×2, w przetrwaniu tylko przy jedzeniu > 0', () => {
         if (BC.Touch) BC.Touch.refresh();
       }
 ```
-- [ ] **Step 4:** `src/touch.js` → `show('tbFly', true); show('tbDown', p.body.flying);`
+- [ ] **Step 4:** `src/touch.js` → `show('tbFly', true); show('tbDown', p.body.flying);`; `#tbFly` przeniesiony w `index.html` na `right: 186px; bottom: 150px` (wcześniej leżał pod `#tbEat`)
 - [ ] **Step 5:** `sw.js` → `CACHE = 'bc-v4a'`; README: wzmianka, że latanie działa też w Przetrwaniu i kosztuje głód.
 - [ ] **Step 6:** testy Node + test dymny headless Chrome (emulacja dotyku, tryb Przetrwanie): przycisk `#tbFly` widoczny, kliknięcie → `BC.Player.body.flying === true`; `stats.food = 0` → po klatce `flying === false`; brak błędów w konsoli.
 - [ ] **Step 7:** commit `feat: flying in survival and on mobile`, `git push`.

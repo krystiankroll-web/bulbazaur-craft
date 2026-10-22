@@ -30,7 +30,7 @@ przyciski po prawej to skok, niszcz, stawiaj i moce. Stuknięcie w Cieniaka to a
 |---|---|
 | W A S D | chodzenie |
 | Mysz | rozglądanie (kliknij w okno gry, żeby zablokować kursor) |
-| Spacja | skok; w kreatywnym 2× szybko = latanie (w locie Spacja w górę, Shift w dół) |
+| Spacja | skok; 2× szybko = latanie (w locie Spacja w górę, Shift w dół). W przetrwaniu lot zjada głód 2× szybciej, przy pustym pasku głodu nie da się latać |
 | Shift + Spacja | super skok Bulbazaura |
 | LPM / PPM | niszcz blok lub atakuj Cieniaka / stawiaj blok |
 | 1–9, kółko myszy | wybór bloku; Tab przełącza 3 strony (natura, kolorowa wełna, śnieg/kaktus/cegła/bruk/pochodnia) |

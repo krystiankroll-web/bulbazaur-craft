@@ -1,5 +1,5 @@
 // Service worker: cache aplikacji, żeby gra działała offline po pierwszym uruchomieniu (poza file://).
-var CACHE = 'bc-v3';
+var CACHE = 'bc-v4a';
 var FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png',
   './src/blocks.js', './src/noise.js', './src/world.js', './src/mesher.js', './src/physics.js', './src/raycast.js', './src/survival.js',
   './src/textures.js', './src/audio.js', './src/heroes.js', './src/monsters.js', './src/touch.js', './src/hud.js', './src/player.js', './src/main.js', './src/boot.js',

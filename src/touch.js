@@ -100,8 +100,8 @@
     show('tbQ', true, '<b>' + h.q.icon + '</b><span>' + h.q.name + '</span>');
     show('tbE', true, '<b>' + h.e.icon + '</b><span>' + h.e.name + '</span>');
     show('tbSuper', !!h.passive.button, '<b>' + h.passive.icon + '</b><span>' + h.passive.name + '</span>');
-    show('tbFly', p.mode === 'creative');
-    show('tbDown', p.mode === 'creative' && p.body.flying);
+    show('tbFly', true);
+    show('tbDown', p.body.flying);
     show('tbEat', p.mode === 'survival');
   };
   T.update = function () {

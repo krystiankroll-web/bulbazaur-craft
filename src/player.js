@@ -79,7 +79,7 @@
       if (e.code === 'KeyW') { if (now - lastW < 280) sprint = true; lastW = now; }
       if (e.code === 'Space' && !spaceHeld) {
         spaceHeld = true;
-        if (now - lastSpace < 300 && Player.mode === 'creative') { Player.toggleFly(); lastSpace = 0; }
+        if (now - lastSpace < 300) { Player.toggleFly(); lastSpace = 0; }
         else { lastSpace = now; if (keys.ShiftLeft || keys.ShiftRight) { if (!Player.useSuper()) Player.pressJump(); } else Player.pressJump(); }
       }
     });
@@ -131,7 +131,7 @@
     BC.HUD.message(tpp ? 'Widok z boku' : 'Widok z oczu', 1000);
   };
   Player.toggleFly = function () {
-    if (Player.mode !== 'creative') { BC.HUD.message('W przetrwaniu nie da się latać', 1000); return; }
+    if (!Player.body.flying && !S.canFly(Player.stats, Player.mode)) { BC.HUD.message('Za głodny, żeby latać', 1200); return; }
     Player.body.flying = !Player.body.flying;
     Player.body.vel.y = 0;
     BC.Audio.sfx(Player.body.flying ? 'fly' : 'unfly');
@@ -233,7 +233,12 @@
 
     // przetrwanie
     if (Player.mode === 'survival') {
-      var ev = S.tickStats(Player.stats, dt, { underwater: underwater, sprinting: running && Math.hypot(body.vel.x, body.vel.z) > 1, noDrown: h.noDrown });
+      var ev = S.tickStats(Player.stats, dt, { underwater: underwater, sprinting: running && Math.hypot(body.vel.x, body.vel.z) > 1, flying: body.flying, noDrown: h.noDrown });
+      if (body.flying && !S.canFly(Player.stats, Player.mode)) {
+        body.flying = false; fallStart = body.pos.y;
+        BC.HUD.message('Za głodny, żeby latać', 1500); BC.Audio.sfx('unfly');
+        if (BC.Touch) BC.Touch.refresh();
+      }
       if (ev.indexOf('drown') >= 0 || ev.indexOf('starve') >= 0) { flash(); BC.Audio.sfx('hurt'); if (Player.stats.hp <= 0) Player.die(); }
       if (ev.indexOf('starve') >= 0) BC.HUD.message('Jesteś głodny! Zjedz jabłko (R)', 1500);
     }
